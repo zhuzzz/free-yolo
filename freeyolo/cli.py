@@ -53,8 +53,8 @@ def _export(store: Store) -> None:
     active = store.all(status="active")
     archived = store.all(status="expired")
     export_markdown.write(active, MD_PATH)
-    export_site.write(active, SITE_PATH, mode="live",
-                      xhref="archive.html", xtext=f"✈ Departed archive ({len(archived)})")
+    archive_label = f"✈ Departed archive ({len(archived)})" if archived else "✈ Departed archive"
+    export_site.write(active, SITE_PATH, mode="live", xhref="archive.html", xtext=archive_label)
     export_site.write(archived, ARCHIVE_PATH, mode="archive",
                       xhref="index.html", xtext="← Back to live board")
     print(f"Wrote site/index.html ({len(active)} live) + archive.html "

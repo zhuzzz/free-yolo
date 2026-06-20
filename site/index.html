@@ -152,15 +152,15 @@
   .card.feat::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--c); }
   .row1 { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px; }
   .opx { display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.06em; padding:2px 8px; border-radius:5px; }
-  .cost { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.05em; padding:2px 7px; border-radius:5px; }
+  .cost { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.05em; padding:2px 7px; border-radius:5px; }
   .cost.free { background:rgba(95,227,192,.16); color:var(--mint); }
   .cost.acct { background:#222836; color:var(--dim); }
   .cost.freemium { background:rgba(255,182,39,.16); color:var(--amber); }
-  .lvl { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.05em; padding:2px 7px; border-radius:5px;
+  .lvl { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.05em; padding:2px 7px; border-radius:5px;
     background:rgba(124,156,255,.16); color:#9fb4ff; }
-  .newb { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; color:#0a0a0a;
+  .newb { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.08em; color:#0a0a0a;
     background:var(--mint); border-radius:5px; padding:2px 7px; box-shadow:0 0 14px rgba(95,227,192,.45); }
-  .curated { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.05em; padding:2px 7px;
+  .curated { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.05em; padding:2px 7px;
     border-radius:5px; border:1px solid rgba(95,227,192,.5); color:var(--mint); }
   .card a.t { font-weight:600; font-size:15.5px; text-decoration:none; letter-spacing:-.01em; }
   .card:hover a.t { color:var(--mint); }
@@ -193,21 +193,35 @@
     background:linear-gradient(100deg,transparent,rgba(255,255,255,.08),transparent); transform:skewX(-16deg); pointer-events:none; }
   .card:hover::after { animation:shine .7s ease; }
   @keyframes shine { to{left:135%} }
+
+  /* Printable: flatten to a readable list with URLs (#3) */
+  @media print {
+    body { background:#fff; color:#000; }
+    nav.jump, .filters, .toolbar, .status, footer, .legend, .more, .stop .go, .card::after { display:none !important; }
+    .sec.reveal { opacity:1 !important; transform:none !important; }
+    .card, .brow, .stop { break-inside:avoid; border:1px solid #bbb; background:#fff; color:#000; }
+    .card a.t, .brow .dest .t, .stop .st { color:#000; }
+    a[href^="http"]::after { content:" — " attr(href); font-size:9px; color:#666; word-break:break-all; }
+  }
+  .noscript { padding:18px 22px; font-family:var(--mono); font-size:13.5px; color:var(--ink); }
+  .noscript ol { margin:10px 0 0; padding-left:22px; } .noscript a { color:var(--mint); }
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <div class="brandline"><span class="eyebrow">Free AI · Departure Board</span>
-    <span class="rule"></span><a class="xlink" id="xlink" href="archive.html">✈ Departed archive (0)</a></div>
+    <span class="rule"></span><a class="xlink" id="xlink" href="archive.html">✈ Departed archive</a></div>
   <h1>Catch free AI <span class="em">before it leaves the gate.</span></h1>
-  <p class="lede">A living board of free ways to learn, use and understand AI. New here? Start with
-    the route below. Watching a deadline? The time-sensitive ones are boarding first.</p>
+  <p class="lede">Built after we found a great free course the week <em>after</em> it closed — so here the
+    time-sensitive ones board first and nothing good slips by unseen. New to AI? Take the 5-stop route below.</p>
   <div class="readout">
     <div class="cell date"><div class="k">Board updated</div><div class="v" id="datev"></div></div>
     <div class="cell small"><div class="k">On board</div><div class="v">257</div></div>
     <div class="cell small"><div class="k">Boarding soon</div><div class="v" id="soonv">—</div></div>
   </div>
 </div></header>
+
+<noscript><div class="noscript wrap"><strong>Free AI Resources.</strong> The full board needs JavaScript for search and filters. To start your AI journey right now, these are free:<ol><li><a href="https://elementsofai.com/">Elements of AI — what AI is, no code</a></li><li><a href="https://3blue1brown.com/lessons/neural-networks">3Blue1Brown — how neural nets work</a></li><li><a href="https://developers.google.com/machine-learning/crash-course">Google ML Crash Course</a></li><li><a href="https://huggingface.co/learn/llm-course">Hugging Face LLM Course</a></li><li><a href="https://course.fast.ai/">Practical Deep Learning (fast.ai)</a></li></ol></div></noscript>
 
 <div class="filters"><div class="wrap">
   <div class="grp"><div class="glabel">Learn by topic</div><div class="chiprow" id="topics"></div></div>
@@ -261,8 +275,11 @@ function costBadge(r){ const c=r.cost||'free';
   return '<span class="cost freemium">FREEMIUM</span>'; }
 
 // "new this week" (#8 freshness) — found_at first-seen, excluding the catalog birth day
-const MIN_FOUND = DATA.reduce((m,r)=> r.found_at && r.found_at < m ? r.found_at : m, '9999-99-99');
-function isNew(r){ return MODE!=='archive' && r.found_at && r.found_at !== MIN_FOUND
+// Baseline = the bulk-import day (most common found_at); only items added AFTER it
+// (and within 7 days) count as new — robust to multiple import days, not just the min.
+const _fc={}; DATA.forEach(r=>{ if(r.found_at) _fc[r.found_at]=(_fc[r.found_at]||0)+1; });
+const BASELINE = (Object.entries(_fc).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0]||[''])[0];
+function isNew(r){ return MODE!=='archive' && r.found_at && r.found_at > BASELINE
   && Math.round((new Date(TODAY)-new Date(r.found_at))/86400000) <= 7; }
 
 // recurring hint from notes (#6/#8)
@@ -299,7 +316,7 @@ function ticket(r,feat){
   const dep=r.event_date?(MODE==='archive'
     ? ` · <span class="dep">departed ${r.event_date}</span>`
     : ` · <span class="dep">DEP ${r.event_date} · T-${Math.max(0,days(r.event_date))}d</span>`):'';
-  const added=r.found_at?` · added ${r.found_at}`:'';
+  const added=isNew(r)?` · added ${r.found_at}`:'';   // only when it actually signals freshness (#2)
   const meta=[(!br&&r.provider)?esc(r.provider.toUpperCase()):'', r.type.toUpperCase()].filter(Boolean).join(' · ')+dep+added;
   const tags=(r.topics||[]).map(t=>`<span class="tag" data-topic="${esc(t)}">${esc(t)}</span>`).join('');
   const style=(feat&&br)?` style="--c:${br.color}"`:'';
@@ -344,6 +361,8 @@ if(MODE!=='archive' && soonCount>0) _soonEl.style.color='#ff6b5e';
 function relevance(a,b){
   const fa=(a.topics||[]).includes('fundamentals'), fb=(b.topics||[]).includes('fundamentals');
   if(fa!==fb) return fa?-1:1;
+  const sa=a.source==='seed'?0:1, sb=b.source==='seed'?0:1;   // curated leads, feed chatter sinks (#4)
+  if(sa!==sb) return sa-sb;
   const ca=a.cost==='free'?0:1, cb=b.cost==='free'?0:1;
   if(ca!==cb) return ca-cb;
   return a.title.localeCompare(b.title);
@@ -379,7 +398,10 @@ TYPE_ORDER.forEach(t=>{
 
 const FIRST_BOARD=(sections.find(s=>s.kind==='board')||{}).id;
 const LEGEND='<div class="legend"><span>🟠 boarding</span><span>🔴 ≤10 days</span><span>◇ 100% free</span><span>↻ runs again</span><span>✦ hand-picked</span></div>';
-const isNoise=r=>/^rss/.test(r.source||'') && !(r.topics&&r.topics.length);
+// Untagged OR clickbait-y feed items (emoji / #hashtags / junk markup) read as social noise (#4).
+const isNoise=r=>/^rss/.test(r.source||'') && (
+  !(r.topics&&r.topics.length) || /\p{Extended_Pictographic}/u.test(r.title)
+  || /(^|\s)#\w/.test(r.title) || /[<>]/.test(r.title));
 
 function sectionHTML(s,n){
   const sub=s.sub?`<span class="sub">${esc(s.sub)}</span>`:'';
@@ -430,8 +452,9 @@ const topTopics=Object.entries(topicCounts).sort((a,b)=>{
   const ia=TOPIC_LADDER.indexOf(a[0]), ib=TOPIC_LADDER.indexOf(b[0]);
   return (ia<0?99:ia)-(ib<0?99:ib) || b[1]-a[1];
 }).slice(0,12);
+const TOPIC_HUMAN={fundamentals:'the basics',llm:'large language models',rag:'retrieval (RAG)',agents:'AI agents','ml-math':'math for ML','deep-learning':'deep learning',nlp:'language (NLP)','computer-vision':'vision (images)',prompting:'writing good prompts','fine-tuning':'fine-tuning models',mlops:'running ML in production',evals:'measuring quality',safety:'AI safety',data:'datasets & data'};
 document.getElementById('topics').innerHTML=topTopics.map(([t,c])=>
-  `<button class="top" data-t="${esc(t)}">${esc(t)}<span class="n">${c}</span></button>`).join('');
+  `<button class="top" data-t="${esc(t)}" title="${esc(TOPIC_HUMAN[t]||t)}">${esc(t)}<span class="n">${c}</span></button>`).join('');
 
 // ---------- operators ----------
 const present=BRANDS.filter(b=>b.top).map(b=>({...b,count:DATA.filter(r=>brandFor(r.provider)?.key===b.key).length})).filter(b=>b.count>0);
@@ -440,8 +463,6 @@ document.getElementById('ops').innerHTML=present.map(b=>
 // In the archive, keep topic filters (browse the past by subject) — hide only operators (#4).
 if(MODE==='archive') document.getElementById('opsgrp').style.display='none';
 
-// #7 don't send visitors to an empty archive
-if(MODE!=='archive'){ const xl=document.getElementById('xlink'); if(xl && /\(0\)\s*$/.test(xl.textContent)) xl.style.display='none'; }
 
 // ---------- #3 #4 #7 filtering ----------
 let activeBrand='', activeTopic='', onlyFree=false;

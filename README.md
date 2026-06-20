@@ -33,7 +33,9 @@ freeyolo list --dated       # just the time-sensitive ones
 open site/index.html        # browse/filter in the browser
 ```
 
-Outputs: [`RESOURCES.md`](RESOURCES.md) and `site/index.html`.
+Outputs: [`RESOURCES.md`](RESOURCES.md), `site/index.html` (live board), and
+`site/archive.html` (departed/expired opportunities). Each export moves any resource
+whose deadline has passed into the archive automatically.
 
 ## Commands
 

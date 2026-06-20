@@ -24,6 +24,7 @@ from .sources import all_sources
 ROOT = Path(__file__).resolve().parent.parent
 MD_PATH = ROOT / "RESOURCES.md"
 SITE_PATH = ROOT / "site" / "index.html"
+ARCHIVE_PATH = ROOT / "site" / "archive.html"
 
 
 def _store(args) -> Store:
@@ -48,11 +49,16 @@ def cmd_export(args) -> None:
 
 
 def _export(store: Store) -> None:
-    resources = store.all()
-    export_markdown.write(resources, MD_PATH)
-    export_site.write(resources, SITE_PATH)
-    active = sum(1 for r in resources if r.status == "active")
-    print(f"Wrote {MD_PATH.name} and site/index.html ({active} active).")
+    newly_expired = store.expire()          # past deadlines move into the archive
+    active = store.all(status="active")
+    archived = store.all(status="expired")
+    export_markdown.write(active, MD_PATH)
+    export_site.write(active, SITE_PATH, mode="live",
+                      xhref="archive.html", xtext=f"✈ Departed archive ({len(archived)})")
+    export_site.write(archived, ARCHIVE_PATH, mode="archive",
+                      xhref="index.html", xtext="← Back to live board")
+    print(f"Wrote site/index.html ({len(active)} live) + archive.html "
+          f"({len(archived)} archived, +{newly_expired} newly expired).")
 
 
 def cmd_list(args) -> None:

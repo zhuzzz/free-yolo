@@ -69,6 +69,19 @@ class Store:
                 new += 1
         return new
 
+    def expire(self) -> int:
+        """Move resources whose event_date has passed into the archive
+        (status='expired'). Returns how many newly expired this run."""
+        from datetime import date
+        cur = self.conn.execute(
+            "UPDATE resources SET status='expired' "
+            "WHERE status='active' AND event_date IS NOT NULL AND event_date <> '' "
+            "AND event_date < ?",
+            (date.today().isoformat(),),
+        )
+        self.conn.commit()
+        return cur.rowcount
+
     def all(self, status: str | None = None) -> list[Resource]:
         q = "SELECT * FROM resources"
         params: list = []

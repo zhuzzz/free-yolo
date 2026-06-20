@@ -1,41 +1,4 @@
-"""Render the catalog to a single self-contained static HTML page.
-
-Design: a transit **departure board** — free AI opportunities are departures,
-deadlines are boarding times, the top AI labs are operators. The generation date
-is the giant amber board readout; time-sensitive items get a split-flap board
-that flaps in on load. Everything else is structured underneath as operator-
-badged tickets. Data is embedded as JSON, filtered client-side. Single file,
-no server; host on GitHub Pages free.
-"""
-
-from __future__ import annotations
-
-import json
-from datetime import date
-from pathlib import Path
-
-from .models import Resource
-
-_TYPE_ORDER = [
-    "course", "tutorial", "video", "book",
-    "tool", "dataset", "paper", "community", "newsletter", "article", "event", "other",
-]
-_TYPE_LABEL = {
-    "course": "Courses",
-    "tutorial": "Tutorials & guides",
-    "video": "Videos & lectures",
-    "book": "Books",
-    "tool": "Tools & playgrounds",
-    "dataset": "Datasets",
-    "paper": "Papers",
-    "community": "Communities",
-    "newsletter": "Newsletters",
-    "article": "Articles",
-    "event": "Events",
-    "other": "Other",
-}
-
-_TEMPLATE = r"""<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -204,13 +167,13 @@ _TEMPLATE = r"""<!doctype html>
 <body>
 <header><div class="wrap">
   <div class="brandline"><span class="eyebrow">Free AI · Departure Board</span>
-    <span class="rule"></span><a class="xlink" id="xlink" href="__XHREF__">__XTEXT__</a></div>
+    <span class="rule"></span><a class="xlink" id="xlink" href="index.html">← Back to live board</a></div>
   <h1>Catch free AI <span class="em">before it leaves the gate.</span></h1>
   <p class="lede">A living board of free ways to learn, use and understand AI — with the
     time-sensitive ones boarding first, so you never find out after it's gone.</p>
   <div class="readout">
     <div class="cell date"><div class="k">Board updated</div><div class="v" id="datev"></div></div>
-    <div class="cell small"><div class="k">On board</div><div class="v">__COUNT__</div></div>
+    <div class="cell small"><div class="k">On board</div><div class="v">0</div></div>
     <div class="cell small"><div class="k">Boarding soon</div><div class="v" id="soonv">—</div></div>
   </div>
 </div></header>
@@ -231,11 +194,11 @@ _TEMPLATE = r"""<!doctype html>
 <footer><div class="wrap">free-yolo · open data · the board refreshes daily, scouts the web weekly.</div></footer>
 
 <script>
-const DATA = __DATA__;
-const TODAY = "__TODAY__";
-const MODE = "__MODE__";              // 'live' | 'archive'
-const TYPE_ORDER = __TYPE_ORDER__;
-const TYPE_LABEL = __TYPE_LABEL__;
+const DATA = [];
+const TODAY = "2026-06-20";
+const MODE = "archive";              // 'live' | 'archive'
+const TYPE_ORDER = ["course", "tutorial", "video", "book", "tool", "dataset", "paper", "community", "newsletter", "article", "event", "other"];
+const TYPE_LABEL = {"course": "Courses", "tutorial": "Tutorials & guides", "video": "Videos & lectures", "book": "Books", "tool": "Tools & playgrounds", "dataset": "Datasets", "paper": "Papers", "community": "Communities", "newsletter": "Newsletters", "article": "Articles", "event": "Events", "other": "Other"};
 
 const BRANDS = [
   {key:'anthropic',      label:'Anthropic',      code:'ANT', color:'#d97757', match:['anthropic'],               top:true},
@@ -417,35 +380,3 @@ if(lead && !reduce){
 </script>
 </body>
 </html>
-"""
-
-
-def render(resources: list[Resource], mode: str = "live",
-           xhref: str = "", xtext: str = "") -> str:
-    payload = [
-        {
-            "title": r.title, "url": r.url, "description": r.description,
-            "type": r.type, "topics": r.topics, "provider": r.provider,
-            "event_date": r.event_date, "found_at": r.found_at, "source": r.source,
-        }
-        for r in resources
-    ]
-    return (
-        _TEMPLATE
-        .replace("__TODAY__", date.today().isoformat())
-        .replace("__COUNT__", str(len(resources)))
-        .replace("__MODE__", mode)
-        .replace("__XHREF__", xhref)
-        .replace("__XTEXT__", xtext)
-        .replace("__TYPE_ORDER__", json.dumps(_TYPE_ORDER))
-        .replace("__TYPE_LABEL__", json.dumps(_TYPE_LABEL, ensure_ascii=False))
-        .replace("__DATA__", json.dumps(payload, ensure_ascii=False))
-    )
-
-
-def write(resources: list[Resource], path: Path | str, mode: str = "live",
-          xhref: str = "", xtext: str = "") -> Path:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render(resources, mode, xhref, xtext))
-    return path

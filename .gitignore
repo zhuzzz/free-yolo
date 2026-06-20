@@ -9,3 +9,8 @@ dist/
 # Local catalog DB (regenerate with `freeyolo collect`).
 # Commit it instead if you want found_at history to persist across machines.
 data/resources.db
+
+# Runtime artifacts from the scheduled jobs.
+data/daily.log
+data/discover.log
+data/digest-latest.txt

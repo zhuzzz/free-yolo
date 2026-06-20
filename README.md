@@ -67,10 +67,26 @@ echo '[{"title":"Some New Free AI Cohort","url":"https://...","type":"event",
 
 ## Keeping it fresh (scheduling)
 
-Run `freeyolo collect` on a schedule (cron / GitHub Action / a Claude Code routine) so the
-catalog stays current and new dated opportunities surface automatically. A scheduled agent
-can additionally run web searches for "new free AI course / hackathon 2026" and `ingest` the
-hits, then notify you of anything with an upcoming `event_date`.
+Two local launchd jobs (macOS, in `scripts/`) keep the catalog current — no cloud, no email:
+
+| job | schedule | what it does | cost |
+|---|---|---|---|
+| `com.freeyolo.daily` | daily 09:00 | `daily.sh`: `collect` + re-export, write `data/digest-latest.txt`, macOS notification if anything closes within 30 days | free (pure Python) |
+| `com.freeyolo.discover` | Mon 09:30 | `discover.sh`: headless Claude (`claude -p`) runs WebSearch for new/time-sensitive free AI opportunities → `ingest` into the catalog | uses LLM credits (kept weekly) |
+
+Install / reload:
+
+```bash
+cp scripts/com.freeyolo.*.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.freeyolo.daily.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.freeyolo.discover.plist
+# run one now without waiting for the schedule:
+launchctl kickstart -k gui/$(id -u)/com.freeyolo.daily
+```
+
+The daily job is free and surfaces deadlines from the existing catalog; the weekly discover
+job is the only LLM-powered (paid) piece, so it runs infrequently. Logs: `data/daily.log`,
+`data/discover.log`.
 
 ## Data model
 

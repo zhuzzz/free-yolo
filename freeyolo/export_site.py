@@ -155,6 +155,14 @@ _TEMPLATE = r"""<!doctype html>
   .stop .body .why { color:var(--dim); font-size:13.5px; margin-top:3px; }
   .stop .go { font-family:var(--mono); font-size:12px; color:var(--mint); opacity:0; transition:.14s; }
   .stop:hover .go { opacity:1; }
+  .stop.disabled { opacity:.5; cursor:default; }
+  .stop.disabled .num { border-style:dashed; color:var(--dim); border-color:var(--dim); }
+  .legend { display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; font-family:var(--mono); font-size:11.5px; color:var(--dim); }
+  .more { margin-top:12px; }
+  .more > summary { cursor:pointer; font-family:var(--mono); font-size:12.5px; color:var(--dim); padding:8px 0; list-style:none; }
+  .more > summary::before { content:"▸ "; } .more[open] > summary::before { content:"▾ "; }
+  .more > summary:hover { color:var(--ink); }
+  .more .grid { margin-top:8px; }
 
   /* ---------- Departure board ---------- */
   .board { margin-top:16px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
@@ -240,7 +248,7 @@ _TEMPLATE = r"""<!doctype html>
 
 <div class="filters"><div class="wrap">
   <div class="grp"><div class="glabel">Learn by topic</div><div class="chiprow" id="topics"></div></div>
-  <div class="grp"><div class="glabel">Operators · top AI labs</div><div class="chiprow" id="ops"></div></div>
+  <div class="grp" id="opsgrp"><div class="glabel">Operators · top AI labs</div><div class="chiprow" id="ops"></div></div>
 </div></div>
 
 <div class="toolbar wrap">
@@ -315,7 +323,7 @@ function boardRow(r){
   const why = r.notes ? esc2(r.notes) : esc2(r.description);
   const cur = r.source==='seed' ? ' <span class="curated">✦ curated</span>' : '';
   const tail = (recurs(r) ? ' <span class="opx" style="background:#222836;color:#9fb4ff">↻ recurs</span>' : '') + cur;
-  return `<a class="brow card" href="${esc(r.url)}" target="_blank" rel="noopener" ${dataAttrs(r)}>
+  return `<a class="brow card" href="${esc(r.url)}" target="_blank" rel="noopener" ${dataAttrs(r)} aria-label="${esc(r.title)} — departs ${r.event_date}, ${cd}">
     <span class="dest"><span class="t">${esc(r.title)}</span> ${opTag(br)} ${costBadge(r)}${tail}
       ${why?`<span class="bdesc">${why}</span>`:''}</span>
     <span class="dep">${r.event_date}</span>
@@ -325,7 +333,9 @@ function boardRow(r){
 
 function ticket(r,feat){
   const br=brandFor(r.provider), lvl=levelOf(r);
-  const dep=r.event_date?` · <span class="dep">DEP ${r.event_date} · T-${Math.max(0,days(r.event_date))}d</span>`:'';
+  const dep=r.event_date?(MODE==='archive'
+    ? ` · <span class="dep">departed ${r.event_date}</span>`
+    : ` · <span class="dep">DEP ${r.event_date} · T-${Math.max(0,days(r.event_date))}d</span>`):'';
   const added=r.found_at?` · added ${r.found_at}`:'';
   const meta=[(!br&&r.provider)?esc(r.provider.toUpperCase()):'', r.type.toUpperCase()].filter(Boolean).join(' · ')+dep+added;
   const tags=(r.topics||[]).map(t=>`<span class="tag" data-topic="${esc(t)}">${esc(t)}</span>`).join('');
@@ -345,14 +355,15 @@ function ticket(r,feat){
 
 // ---------- #1 Start-here itinerary (curated order, #8) ----------
 const PATH=[
-  {match:['elements of ai'],               why:'No code, no math — just understand what AI is and is not.'},
-  {match:['3blue1brown'],                  why:'See, visually, how a neural network actually works.'},
-  {match:['machine learning crash course'],why:'Your first hands-on ML, right in the browser.'},
-  {match:['llm course'],                   why:'Cross from AI user to AI builder with language models.'},
-  {match:['practical deep learning','course.fast'], why:'Build and ship real models, code-first.'},
+  {name:'Elements of AI',                  match:['elements of ai'],               why:'No code, no math — just understand what AI is and is not.'},
+  {name:'3Blue1Brown — Neural Networks',   match:['3blue1brown'],                  why:'See, visually, how a neural network actually works.'},
+  {name:'Google ML Crash Course',          match:['machine learning crash course'],why:'Your first hands-on ML, right in the browser.'},
+  {name:'Hugging Face LLM Course',         match:['llm course'],                   why:'Cross from AI user to AI builder with language models.'},
+  {name:'Practical Deep Learning (fast.ai)', match:['practical deep learning','course.fast'], why:'Build and ship real models, code-first.'},
 ];
-const pathStops=[];
-PATH.forEach(p=>{ const r=DATA.find(x=>p.match.some(m=>(x.title+' '+x.url).toLowerCase().includes(m))); if(r) pathStops.push({r,why:p.why}); });
+// Always render the full intended ladder; missing stops become disabled placeholders (#8).
+const pathStops=PATH.map(p=>{ const r=DATA.find(x=>p.match.some(m=>(x.title+' '+x.url).toLowerCase().includes(m)));
+  return r ? {r,why:p.why} : {placeholder:true,name:p.name,why:p.why}; });
 
 // ---------- #6 split dated board into learn vs compete ----------
 function isCompete(r){ return /(hackathon|agenthack|xprize|competition|playground|kaggle competitions|devpost|hack )/i.test(r.title+' '+r.url+' '+(r.provider||'')); }
@@ -360,7 +371,11 @@ const dated=DATA.filter(r=>r.event_date);
 const bySoon=(a,b)=> MODE==='archive' ? b.event_date.localeCompare(a.event_date) : a.event_date.localeCompare(b.event_date);
 const learnDates=dated.filter(r=>!isCompete(r)).slice().sort(bySoon);
 const competeDates=dated.filter(isCompete).slice().sort(bySoon);
-document.getElementById('soonv').textContent=dated.length||'0';
+// "Boarding soon" = dated items actually closing within 2 weeks (#2), not all dated.
+const soonCount = MODE==='archive' ? dated.length
+  : dated.filter(r=>{const n=days(r.event_date); return n>=0 && n<=14;}).length;
+const _soonEl=document.getElementById('soonv'); _soonEl.textContent=soonCount||'0';
+if(MODE!=='archive' && soonCount>0) _soonEl.style.color='#ff6b5e';
 
 // ---------- #2 relevance sort ----------
 function relevance(a,b){
@@ -385,7 +400,9 @@ const fresh=DATA.filter(isNew).sort((a,b)=>b.found_at.localeCompare(a.found_at))
 const sections=[];
 if(MODE!=='archive' && pathStops.length) sections.push({id:'start',label:'New to AI? Board here first',sub:'a 5-stop route from zero',items:pathStops.map(s=>s.r),kind:'path',stops:pathStops});
 if(MODE==='archive'){
-  if(dated.length) sections.push({id:'board',label:'Departed',items:learnDates.concat(competeDates),kind:'board'});
+  if(dated.length){ // recurring chances first — they come back, watch for the next one (#4)
+    const all=learnDates.concat(competeDates).slice().sort((a,b)=>(recurs(b)?1:0)-(recurs(a)?1:0));
+    sections.push({id:'board',label:'Departed',items:all,kind:'board'}); }
 }else{
   if(learnDates.length)   sections.push({id:'board',label:'Learning deadlines',sub:'cohorts & intensives — catchable now',items:learnDates,kind:'board',cls:'board'});
   if(competeDates.length) sections.push({id:'compete',label:'Compete & build',sub:'hackathons & contests (optional, not step one)',items:competeDates,kind:'board',cls:'board'});
@@ -394,27 +411,45 @@ if(fresh.length)    sections.push({id:'new',label:'Just added this week',items:f
 if(featured.length) sections.push({id:'featured',label:'From the top AI labs',items:featured,kind:'feat'});
 TYPE_ORDER.forEach(t=>{
   const it=DATA.filter(r=>r.type===t).sort(relevance);
-  if(it.length) sections.push({id:'type-'+t,label:TYPE_LABEL[t],items:it,kind:'grid'});
+  if(it.length) sections.push({id:'type-'+t,label:TYPE_LABEL[t],items:it,kind:'grid',gate:true});
 });
+
+const FIRST_BOARD=(sections.find(s=>s.kind==='board')||{}).id;
+const LEGEND='<div class="legend"><span>🟠 boarding</span><span>🔴 ≤10 days</span><span>◇ 100% free</span><span>↻ runs again</span><span>✦ hand-picked</span></div>';
+const isNoise=r=>/^rss/.test(r.source||'') && !(r.topics&&r.topics.length);
 
 function sectionHTML(s,n){
   const sub=s.sub?`<span class="sub">${esc(s.sub)}</span>`:'';
   const head=`<div class="sechead"><span class="ix">${String(n+1).padStart(2,'0')}</span><h2>${esc(s.label)}</h2>${sub}<span class="ct">${s.items.length}</span></div>`;
   if(s.kind==='path'){
-    const stops=s.stops.map((st,i)=>`<a class="stop" href="${esc(st.r.url)}" target="_blank" rel="noopener" ${dataAttrs(st.r)}>
-      <span class="num">${i+1}</span>
-      <span class="body"><span class="st">${esc(st.r.title)} ${costBadge(st.r)}</span><span class="why">${esc(st.why)}</span></span>
-      <span class="go">board →</span></a>`).join('');
+    const stops=s.stops.map((st,i)=>{
+      if(st.placeholder){
+        return `<div class="stop disabled" aria-label="Stop ${i+1}: ${esc(st.name)} — not free right now, check back">
+          <span class="num" aria-hidden="true">${i+1}</span>
+          <span class="body"><span class="st">${esc(st.name)} <span class="cost acct">CHECK BACK</span></span><span class="why">${esc(st.why)}</span></span></div>`;
+      }
+      return `<a class="stop" href="${esc(st.r.url)}" target="_blank" rel="noopener" ${dataAttrs(st.r)} aria-label="Stop ${i+1}: ${esc(st.r.title)}">
+        <span class="num" aria-hidden="true">${i+1}</span>
+        <span class="body"><span class="st">${esc(st.r.title)} ${costBadge(st.r)}</span><span class="why">${esc(st.why)}</span></span>
+        <span class="go" aria-hidden="true">board →</span></a>`;
+    }).join('');
     return `<section class="sec reveal" id="${s.id}">${head}<div class="route">${stops}</div></section>`;
   }
   if(s.kind==='board'){
     const dh = MODE==='archive'?'Departed':'Countdown';
-    return `<section class="sec reveal" id="${s.id}">${head}
+    const legend = s.id===FIRST_BOARD ? LEGEND : '';
+    return `<section class="sec reveal" id="${s.id}">${head}${legend}
       <div class="board"><div class="head"><span>Destination</span><span>Departs</span><span>${dh}</span></div>
       ${s.items.map(boardRow).join('')}</div></section>`;
   }
-  return `<section class="sec reveal" id="${s.id}">${head}
-    <div class="grid ${s.kind==='feat'?'feat':''}">${s.items.map(r=>ticket(r,s.kind==='feat')).join('')}</div></section>`;
+  // grid / feat — quality-gate untagged RSS items into a collapsed "More from the feeds" (#1)
+  const feat=s.kind==='feat';
+  const primary = s.gate ? s.items.filter(r=>!isNoise(r)) : s.items;
+  const extra   = s.gate ? s.items.filter(isNoise) : [];
+  const grid=`<div class="grid ${feat?'feat':''}">${primary.map(r=>ticket(r,feat)).join('')}</div>`;
+  const more=extra.length?`<details class="more"><summary>More from the feeds (${extra.length}) — auto-scouted, untagged</summary>
+    <div class="grid">${extra.map(r=>ticket(r,false)).join('')}</div></details>`:'';
+  return `<section class="sec reveal" id="${s.id}">${head}${grid}${more}</section>`;
 }
 
 document.getElementById('list').innerHTML=sections.map(sectionHTML).join('');
@@ -426,7 +461,12 @@ document.getElementById('nav').innerHTML=sections.map(s=>{
 // ---------- #4 topic chips ----------
 const topicCounts={};
 DATA.forEach(r=>(r.topics||[]).forEach(t=>topicCounts[t]=(topicCounts[t]||0)+1));
-const topTopics=Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,12);
+// Order chips as a beginner→advanced learning ladder, not by raw frequency (#6).
+const TOPIC_LADDER=['fundamentals','ml-math','deep-learning','computer-vision','nlp','prompting','llm','rag','agents','fine-tuning','mlops','evals','safety','data'];
+const topTopics=Object.entries(topicCounts).sort((a,b)=>{
+  const ia=TOPIC_LADDER.indexOf(a[0]), ib=TOPIC_LADDER.indexOf(b[0]);
+  return (ia<0?99:ia)-(ib<0?99:ib) || b[1]-a[1];
+}).slice(0,12);
 document.getElementById('topics').innerHTML=topTopics.map(([t,c])=>
   `<button class="top" data-t="${esc(t)}">${esc(t)}<span class="n">${c}</span></button>`).join('');
 
@@ -434,7 +474,8 @@ document.getElementById('topics').innerHTML=topTopics.map(([t,c])=>
 const present=BRANDS.filter(b=>b.top).map(b=>({...b,count:DATA.filter(r=>brandFor(r.provider)?.key===b.key).length})).filter(b=>b.count>0);
 document.getElementById('ops').innerHTML=present.map(b=>
   `<button class="op" data-b="${b.key}" style="--c:${b.color}"><span class="dot"></span>${esc(b.label)}<span class="n">${b.count}</span></button>`).join('');
-if(MODE==='archive') document.querySelector('.filters').style.display='none';
+// In the archive, keep topic filters (browse the past by subject) — hide only operators (#4).
+if(MODE==='archive') document.getElementById('opsgrp').style.display='none';
 
 // #7 don't send visitors to an empty archive
 if(MODE!=='archive'){ const xl=document.getElementById('xlink'); if(xl && /\(0\)\s*$/.test(xl.textContent)) xl.style.display='none'; }
@@ -465,6 +506,24 @@ function applyFilter(){
     ? `showing <b>${total}</b> of ${TOTAL}<button class="clear" id="clr">✕ clear filters</button>`
     : '';
   const clr=document.getElementById('clr'); if(clr) clr.onclick=resetFilters;
+  writeHash();
+}
+// #3 shareable/bookmarkable filter state in the URL hash
+function writeHash(){
+  const p=new URLSearchParams();
+  if(q.value) p.set('q',q.value);
+  if(activeBrand) p.set('brand',activeBrand);
+  if(activeTopic) p.set('topic',activeTopic);
+  if(onlyFree) p.set('free','1');
+  const s=p.toString();
+  history.replaceState(null,'', s?('#'+s):(location.pathname+location.search));
+}
+function parseHash(){
+  const p=new URLSearchParams(location.hash.slice(1));
+  q.value=p.get('q')||''; activeBrand=p.get('brand')||''; activeTopic=p.get('topic')||''; onlyFree=p.get('free')==='1';
+  document.querySelectorAll('.op').forEach(o=>o.classList.toggle('active',o.dataset.b===activeBrand));
+  document.querySelectorAll('.top').forEach(o=>o.classList.toggle('active',o.dataset.t===activeTopic));
+  document.getElementById('freeToggle').classList.toggle('active',onlyFree);
 }
 function resetFilters(){
   activeBrand=''; activeTopic=''; onlyFree=false; q.value='';
@@ -519,6 +578,7 @@ if(lead && !reduce && MODE!=='archive' && !leadSoon){
   },3800);
 }
 
+parseHash();
 applyFilter();
 </script>
 </body>

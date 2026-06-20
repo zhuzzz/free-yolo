@@ -40,7 +40,17 @@ _TEMPLATE = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Free AI · Departure Board</title>
+<title>Free AI · Departure Board — free ways to learn, use & understand AI</title>
+<meta name="description" content="A living board of free resources to learn, use and understand AI — with the time-sensitive ones (live cohorts, deadlines, hackathons) flagged so you never find out after they're gone.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='52'%3E%E2%9C%88%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free AI · Departure Board">
+<meta property="og:description" content="Free ways to learn, use and understand AI — catch the time-sensitive ones before they board.">
+<meta property="og:image" content="og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Free AI · Departure Board">
+<meta name="twitter:description" content="Free ways to learn, use and understand AI — catch them before they board.">
+<meta name="twitter:image" content="og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -179,6 +189,8 @@ _TEMPLATE = r"""<!doctype html>
     background:rgba(124,156,255,.16); color:#9fb4ff; }
   .newb { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; color:#0a0a0a;
     background:var(--mint); border-radius:5px; padding:2px 7px; box-shadow:0 0 14px rgba(95,227,192,.45); }
+  .curated { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.05em; padding:2px 7px;
+    border-radius:5px; border:1px solid rgba(95,227,192,.5); color:var(--mint); }
   .card a.t { font-weight:600; font-size:15.5px; text-decoration:none; letter-spacing:-.01em; }
   .card:hover a.t { color:var(--mint); }
   .card .meta { font-family:var(--mono); font-size:11.5px; color:var(--dim); margin-top:6px; letter-spacing:.02em; }
@@ -301,7 +313,8 @@ function boardRow(r){
   const cd = MODE==='archive' ? (Math.abs(n)+'d ago') : (n<=0?'NOW':('T-'+n+'d'));
   const cdcls = MODE==='archive' ? 'past' : (n<=10?'soon':'');
   const why = r.notes ? esc2(r.notes) : esc2(r.description);
-  const tail = recurs(r) ? ' <span class="opx" style="background:#222836;color:#9fb4ff">↻ recurs</span>' : '';
+  const cur = r.source==='seed' ? ' <span class="curated">✦ curated</span>' : '';
+  const tail = (recurs(r) ? ' <span class="opx" style="background:#222836;color:#9fb4ff">↻ recurs</span>' : '') + cur;
   return `<a class="brow card" href="${esc(r.url)}" target="_blank" rel="noopener" ${dataAttrs(r)}>
     <span class="dest"><span class="t">${esc(r.title)}</span> ${opTag(br)} ${costBadge(r)}${tail}
       ${why?`<span class="bdesc">${why}</span>`:''}</span>
@@ -313,10 +326,12 @@ function boardRow(r){
 function ticket(r,feat){
   const br=brandFor(r.provider), lvl=levelOf(r);
   const dep=r.event_date?` · <span class="dep">DEP ${r.event_date} · T-${Math.max(0,days(r.event_date))}d</span>`:'';
-  const meta=[(!br&&r.provider)?esc(r.provider.toUpperCase()):'', r.type.toUpperCase()].filter(Boolean).join(' · ')+dep;
+  const added=r.found_at?` · added ${r.found_at}`:'';
+  const meta=[(!br&&r.provider)?esc(r.provider.toUpperCase()):'', r.type.toUpperCase()].filter(Boolean).join(' · ')+dep+added;
   const tags=(r.topics||[]).map(t=>`<span class="tag" data-topic="${esc(t)}">${esc(t)}</span>`).join('');
   const style=(feat&&br)?` style="--c:${br.color}"`:'';
-  const row1=[isNew(r)?'<span class="newb">NEW</span>':'', opTag(br), costBadge(r), lvl?`<span class="lvl">${lvl}</span>`:''].filter(Boolean).join(' ');
+  const cur=r.source==='seed'?'<span class="curated">✦ curated</span>':'';
+  const row1=[isNew(r)?'<span class="newb">NEW</span>':'', cur, opTag(br), costBadge(r), lvl?`<span class="lvl">${lvl}</span>`:''].filter(Boolean).join(' ');
   const why=(r.event_date&&r.notes)?`<div class="why">${esc2(r.notes)}</div>`:'';
   return `<div class="card ${feat?'feat':''}"${style} ${dataAttrs(r)}>
     <div class="row1">${row1}</div>
@@ -421,6 +436,9 @@ document.getElementById('ops').innerHTML=present.map(b=>
   `<button class="op" data-b="${b.key}" style="--c:${b.color}"><span class="dot"></span>${esc(b.label)}<span class="n">${b.count}</span></button>`).join('');
 if(MODE==='archive') document.querySelector('.filters').style.display='none';
 
+// #7 don't send visitors to an empty archive
+if(MODE!=='archive'){ const xl=document.getElementById('xlink'); if(xl && /\(0\)\s*$/.test(xl.textContent)) xl.style.display='none'; }
+
 // ---------- #3 #4 #7 filtering ----------
 let activeBrand='', activeTopic='', onlyFree=false;
 const q=document.getElementById('q'), empty=document.getElementById('empty'), status=document.getElementById('status');
@@ -470,6 +488,10 @@ if(MODE==='archive'){
   document.querySelector('h1').innerHTML='Departed. <span class="em">The chances that already sailed.</span>';
   document.querySelector('.lede').textContent='Free AI opportunities whose deadline has passed — kept for reference.';
   const ks=document.querySelectorAll('.cell .k'); if(ks[1])ks[1].textContent='In archive'; if(ks[2])ks[2].textContent='Departed';
+  document.title='Free AI · Departed (Archive)';
+  const setMeta=(s,v)=>{const e=document.querySelector(s); if(e)e.setAttribute('content',v);};
+  setMeta('meta[property="og:title"]','Free AI · Departed (Archive)');
+  setMeta('meta[property="og:description"]','Past free AI opportunities, kept for reference.');
   if(!dated.length){ empty.style.display=''; empty.textContent='Nothing has departed yet — everything on the board is still catchable.'; }
 }
 

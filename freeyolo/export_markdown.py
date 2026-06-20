@@ -1,10 +1,12 @@
-"""Render the catalog to RESOURCES.md — beginner path first, then grouped by
-type (relevance-sorted), with cost and level shown to match the web page."""
+"""Render the catalog to RESOURCES.md — a navigable, beginner-first list that
+mirrors the web page: table of contents, Start-here path, recently-added pulse,
+deadline urgency, cost/level/curated signals, relevance-sorted type sections.
+"""
 
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from .models import Resource
@@ -31,7 +33,6 @@ _TYPE_LABEL = {
 _COST_LABEL = {"free": "Free", "free-account": "Free · sign-up", "freemium": "Freemium"}
 _ADV = {"fine-tuning", "mlops", "evals", "agents", "rag"}
 
-# Curated zero-background itinerary (matched against the live catalog).
 _PATH = [
     (["elements of ai"], "No code, no math — understand what AI is and is not."),
     (["3blue1brown"], "See, visually, how a neural network actually works."),
@@ -39,6 +40,13 @@ _PATH = [
     (["llm course"], "Cross from AI user to AI builder with language models."),
     (["practical deep learning", "course.fast"], "Build and ship real models, code-first."),
 ]
+
+
+def _slug(label: str) -> str:
+    """GitHub-compatible heading anchor: lowercase, drop non-[alnum/space/-/_],
+    spaces→hyphens, keeping the leading hyphen a leading emoji leaves behind."""
+    kept = "".join(ch for ch in label.lower() if ch.isalnum() or ch in " -_")
+    return kept.replace(" ", "-")
 
 
 def _level(r: Resource) -> str:
@@ -50,10 +58,27 @@ def _level(r: Resource) -> str:
 
 
 def _relevance_key(r: Resource):
-    # fundamentals first, then fully free, then alphabetical — mirrors the site.
     return (0 if "fundamentals" in r.topics else 1,
             0 if r.cost == "free" else 1,
             r.title.lower())
+
+
+def _urgency(r: Resource) -> str:
+    if not r.event_date:
+        return ""
+    try:
+        n = (datetime.fromisoformat(r.event_date).date() - date.today()).days
+    except ValueError:
+        return ""
+    if n < 0:
+        return ""
+    if n == 0:
+        return " · 🔴 closes today"
+    if n <= 7:
+        return f" · 🔴 closes in {n}d"
+    if n <= 30:
+        return f" · ⏳ in {n}d"
+    return ""
 
 
 def render(resources: list[Resource]) -> str:
@@ -62,6 +87,32 @@ def render(resources: list[Resource]) -> str:
     for r in active:
         by_type[r.type].append(r)
 
+    # Beginner on-ramp
+    stops = []
+    for matches, why in _PATH:
+        hit = next((r for r in active
+                    if any(m in f"{r.title} {r.url}".lower() for m in matches)), None)
+        if hit:
+            stops.append((hit, why))
+
+    # Recently added (found_at = first seen), excluding the catalog's birth day
+    min_found = min((r.found_at for r in active), default="")
+    recently = sorted((r for r in active if r.found_at and r.found_at != min_found),
+                      key=lambda r: r.found_at, reverse=True)[:10]
+
+    upcoming = sorted((r for r in active if r.is_time_sensitive),
+                      key=lambda r: r.event_date or "")
+    shown = {r.id for r in upcoming}     # so dated items aren't repeated below
+
+    # type sections (deduped against the deadline list, relevance-sorted)
+    type_sections = []
+    for t in _TYPE_ORDER:
+        items = sorted((r for r in by_type.get(t, []) if r.id not in shown),
+                       key=_relevance_key)
+        if items:
+            type_sections.append((t, items))
+
+    # ---- assemble ----
     lines = [
         "# Free AI Resources",
         "",
@@ -74,31 +125,40 @@ def render(resources: list[Resource]) -> str:
         "",
     ]
 
-    # Beginner on-ramp
-    stops = []
-    for matches, why in _PATH:
-        hit = next((r for r in active
-                    if any(m in f"{r.title} {r.url}".lower() for m in matches)), None)
-        if hit:
-            stops.append((hit, why))
+    # Table of contents
+    toc = []
+    if stops:
+        toc.append(("🚀 New to AI? Start here", len(stops)))
+    if recently:
+        toc.append(("🆕 Recently added", len(recently)))
+    if upcoming:
+        toc.append(("⏰ Don't miss — has a date/deadline", len(upcoming)))
+    for t, items in type_sections:
+        toc.append((_TYPE_LABEL[t], len(items)))
+    if toc:
+        lines += ["## Contents", ""]
+        lines += [f"- [{label}](#{_slug(label)}) ({n})" for label, n in toc]
+        lines.append("")
+
     if stops:
         lines += ["## 🚀 New to AI? Start here", ""]
         for i, (r, why) in enumerate(stops, 1):
             lines.append(f"{i}. [{r.title}]({r.url}) — _{_COST_LABEL.get(r.cost, 'Free')}_  \n   {why}")
         lines.append("")
 
-    upcoming = sorted((r for r in active if r.is_time_sensitive),
-                      key=lambda r: r.event_date or "")
+    if recently:
+        lines += ["## 🆕 Recently added", ""]
+        for r in recently:
+            lines.append(_line(r) + f"  \n  _added {r.found_at}_")
+        lines.append("")
+
     if upcoming:
         lines += ["## ⏰ Don't miss — has a date/deadline", ""]
         for r in upcoming:
             lines.append(_line(r, show_date=True))
         lines.append("")
 
-    for t in _TYPE_ORDER:
-        items = sorted(by_type.get(t, []), key=_relevance_key)
-        if not items:
-            continue
+    for t, items in type_sections:
         lines += [f"## {_TYPE_LABEL[t]}", ""]
         for r in items:
             lines.append(_line(r))
@@ -114,9 +174,11 @@ def _line(r: Resource, show_date: bool = False) -> str:
     badges = [_COST_LABEL.get(r.cost, "Free")]
     if _level(r):
         badges.append(_level(r))
+    if r.source == "seed":
+        badges.append("✦ curated")
     bits.append("· " + " · ".join(badges))
     if show_date and r.event_date:
-        bits.append(f"**📅 {r.event_date}**")
+        bits.append(f"**📅 {r.event_date}**{_urgency(r)}")
     if r.topics:
         bits.append(" ".join(f"`{t}`" for t in r.topics))
     if r.description:

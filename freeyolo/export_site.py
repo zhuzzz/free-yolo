@@ -1,10 +1,11 @@
 """Render the catalog to a single self-contained static HTML page.
 
-Layout: a bold generation-date hero, a row of brand-colored filter chips for the
-top AI labs, a "From the top AI labs" featured band, a sticky category jump-nav,
-a "closing soon" band, then one section per resource type. Every card carries a
-brand badge when it comes from a recognized lab. Data is embedded as JSON and
-filtered client-side. No build step, no server. Host on GitHub Pages free.
+Design: a transit **departure board** — free AI opportunities are departures,
+deadlines are boarding times, the top AI labs are operators. The generation date
+is the giant amber board readout; time-sensitive items get a split-flap board
+that flaps in on load. Everything else is structured underneath as operator-
+badged tickets. Data is embedded as JSON, filtered client-side. Single file,
+no server; host on GitHub Pages free.
 """
 
 from __future__ import annotations
@@ -16,22 +17,22 @@ from pathlib import Path
 from .models import Resource
 
 _TYPE_ORDER = [
-    "event", "course", "tutorial", "video", "book",
-    "tool", "dataset", "paper", "community", "newsletter", "article", "other",
+    "course", "tutorial", "video", "book",
+    "tool", "dataset", "paper", "community", "newsletter", "article", "event", "other",
 ]
 _TYPE_LABEL = {
-    "event": "🗓️ Events & live cohorts",
-    "course": "🎓 Courses",
-    "tutorial": "📝 Tutorials & guides",
-    "video": "🎬 Videos & lectures",
-    "book": "📚 Books",
-    "tool": "🛠️ Tools & playgrounds",
-    "dataset": "🗂️ Datasets",
-    "paper": "📄 Papers",
-    "community": "💬 Communities",
-    "newsletter": "📰 Newsletters",
-    "article": "🧵 Articles",
-    "other": "🔗 Other",
+    "course": "Courses",
+    "tutorial": "Tutorials & guides",
+    "video": "Videos & lectures",
+    "book": "Books",
+    "tool": "Tools & playgrounds",
+    "dataset": "Datasets",
+    "paper": "Papers",
+    "community": "Communities",
+    "newsletter": "Newsletters",
+    "article": "Articles",
+    "event": "Events",
+    "other": "Other",
 }
 
 _TEMPLATE = r"""<!doctype html>
@@ -39,104 +40,170 @@ _TEMPLATE = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Free AI Resources</title>
+<title>Free AI · Departure Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0a0e14; --card:#161b22; --line:#2a313c; --fg:#e6edf3;
-          --muted:#9aa4b2; --accent:#7c9cff; --warn:#f0883e; }
+  :root {
+    --void:#090b10; --panel:#11141d; --panel2:#161a25; --line:#252b3a;
+    --ink:#ece7d6; --dim:#8a92a6; --amber:#ffb627; --mint:#5fe3c0;
+    --disp:"Space Grotesk",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
   * { box-sizing:border-box; }
   html { scroll-behavior:smooth; }
-  body { margin:0; font:15px/1.55 -apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg);
+  body {
+    margin:0; color:var(--ink); font-family:var(--disp); font-size:15px; line-height:1.55;
     background:
-      radial-gradient(1100px 500px at 50% -8%, rgba(124,156,255,.18), transparent 60%),
-      radial-gradient(900px 500px at 100% 0%, rgba(240,136,62,.10), transparent 55%),
-      var(--bg); background-attachment:fixed; }
+      linear-gradient(rgba(120,140,200,.035) 1px, transparent 1px) 0 0/100% 30px,
+      radial-gradient(1200px 520px at 50% -10%, rgba(255,182,39,.10), transparent 60%),
+      radial-gradient(900px 600px at 100% 110%, rgba(95,227,192,.08), transparent 60%),
+      var(--void);
+    background-attachment:fixed;
+  }
+  a { color:inherit; }
+  .wrap { max-width:1120px; margin:0 auto; padding:0 22px; }
+  .mono { font-family:var(--mono); }
+  .eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.34em; text-transform:uppercase; color:var(--mint); }
 
-  /* ---- Hero ---- */
-  header { text-align:center; padding:52px 20px 16px; max-width:1100px; margin:0 auto; }
-  header h1 { margin:0 0 22px; font-size:clamp(22px,4vw,30px); font-weight:800; letter-spacing:.2px;
-    background:linear-gradient(90deg,#fff,#9fb4ff); -webkit-background-clip:text; background-clip:text;
-    -webkit-text-fill-color:transparent; }
-  .stamp { display:inline-block; border:1px solid rgba(124,156,255,.5); border-radius:18px;
-    padding:18px 40px; background:linear-gradient(180deg,rgba(124,156,255,.16),rgba(124,156,255,.05));
-    box-shadow:0 8px 40px rgba(124,156,255,.15); }
-  .stamp .lbl { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--accent); }
-  .stamp .date { display:block; font-size:clamp(34px,7vw,46px); font-weight:900; color:#fff; line-height:1.05; margin-top:4px; }
-  .stamp .sub { display:block; font-size:13px; color:var(--muted); margin-top:8px; }
+  /* ---------- Masthead ---------- */
+  header { padding:54px 0 26px; border-bottom:1px solid var(--line); }
+  .brandline { display:flex; align-items:center; gap:12px; }
+  .brandline::after { content:""; flex:1; height:1px;
+    background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px); }
+  h1 { font-weight:700; font-size:clamp(26px,4.4vw,46px); line-height:1.02; letter-spacing:-.02em;
+    margin:18px 0 4px; max-width:16ch; }
+  h1 .em { color:var(--amber); }
+  .lede { color:var(--dim); max-width:54ch; margin:0 0 30px; }
 
-  /* ---- Top-lab brand chips ---- */
-  .labs { max-width:1100px; margin:26px auto 0; padding:0 20px; text-align:center; }
-  .labs .t { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
-  .chips { display:flex; flex-wrap:wrap; gap:9px; justify-content:center; }
-  .chip { cursor:pointer; border:1.5px solid var(--c); color:#fff; background:transparent;
-    border-radius:22px; padding:7px 15px; font-size:14px; font-weight:600; display:inline-flex;
-    align-items:center; gap:7px; transition:.15s; }
-  .chip::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--c); }
-  .chip:hover { background:color-mix(in srgb, var(--c) 18%, transparent); }
-  .chip.active { background:var(--c); color:#fff; }
-  .chip.active::before { background:#fff; }
-  .chip span { color:var(--muted); font-weight:500; font-size:12px; }
-  .chip.active span { color:rgba(255,255,255,.85); }
+  /* readout strip — the generation date is the loudest cell */
+  .readout { display:grid; grid-template-columns:auto auto auto; gap:14px; align-items:end; }
+  .cell .k { font-family:var(--mono); font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--dim); }
+  .cell .v { font-family:var(--mono); font-weight:700; line-height:1; }
+  .cell.date .v { font-size:clamp(38px,8.5vw,76px); color:var(--amber);
+    text-shadow:0 0 26px rgba(255,182,39,.35); }
+  .cell.small .v { font-size:clamp(20px,3vw,30px); color:var(--ink); padding-bottom:6px; }
+  .flap { display:inline-block; transform-origin:50% 100%; }
 
-  .search { max-width:1100px; margin:20px auto 0; padding:0 20px; text-align:center; }
-  .search input { width:min(460px,100%); background:var(--card); color:var(--fg);
-    border:1px solid var(--line); border-radius:12px; padding:11px 16px; font-size:15px; }
+  /* ---------- Operators (brand chips) ---------- */
+  .operators { padding:26px 0 4px; }
+  .ops { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .op { cursor:pointer; font-family:var(--mono); font-size:13px; font-weight:600; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:7px 12px;
+    display:inline-flex; align-items:center; gap:8px; transition:.14s; }
+  .op .dot { width:9px; height:9px; border-radius:2px; background:var(--c); box-shadow:0 0 10px var(--c); }
+  .op .n { color:var(--dim); font-weight:500; }
+  .op:hover { border-color:var(--c); transform:translateY(-1px); }
+  .op.active { background:var(--c); color:#0a0a0a; border-color:var(--c); }
+  .op.active .n { color:rgba(0,0,0,.65); }
+  .op.active .dot { background:#0a0a0a; box-shadow:none; }
 
-  /* ---- Sticky jump-nav ---- */
-  nav.jump { position:sticky; top:0; z-index:10; margin-top:18px;
-    background:rgba(10,14,20,.85); backdrop-filter:blur(10px);
-    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-    display:flex; flex-wrap:wrap; justify-content:center; gap:6px; padding:10px 14px; }
-  nav.jump a { text-decoration:none; color:var(--fg); background:var(--card);
-    border:1px solid var(--line); border-radius:20px; padding:5px 12px; font-size:14px; white-space:nowrap; }
-  nav.jump a:hover { border-color:var(--accent); }
-  nav.jump a .nb { color:var(--muted); font-size:12px; margin-left:5px; }
-  nav.jump a.soon { border-color:var(--warn); }
-  nav.jump a.featured { border-color:#e3b341; }
+  /* ---------- Search ---------- */
+  .toolbar { padding:22px 0 6px; }
+  #q { width:100%; max-width:520px; font-family:var(--mono); font-size:14px; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:11px 14px; }
+  #q::placeholder { color:var(--dim); }
 
-  main { max-width:1100px; margin:0 auto; padding:8px 20px 70px; }
-  section.sec { scroll-margin-top:66px; padding-top:30px; }
-  section.sec h2 { font-size:20px; border-bottom:1px solid var(--line); padding-bottom:9px; }
-  section.sec h2 .badge { font-size:13px; color:var(--muted); font-weight:400; }
-  .grid { display:grid; gap:13px; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); }
-  .grid.feat { grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
+  /* ---------- Sticky board nav ---------- */
+  nav.jump { position:sticky; top:0; z-index:20; margin-top:18px; padding:9px 0;
+    background:rgba(9,11,16,.86); backdrop-filter:blur(10px);
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  nav.jump .row { display:flex; flex-wrap:wrap; gap:6px; }
+  nav.jump a { font-family:var(--mono); font-size:12.5px; text-decoration:none; color:var(--dim);
+    border:1px solid transparent; border-radius:6px; padding:4px 10px; white-space:nowrap; }
+  nav.jump a:hover { color:var(--ink); border-color:var(--line); }
+  nav.jump a.board { color:var(--amber); }
+  nav.jump a .nb { opacity:.6; margin-left:5px; }
 
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
-    transition:transform .12s, border-color .12s, box-shadow .12s; }
-  .card:hover { transform:translateY(-3px); border-color:var(--accent); box-shadow:0 10px 30px rgba(0,0,0,.35); }
-  .card.dated { border-left:3px solid var(--warn); }
-  .fcard { background:linear-gradient(180deg, color-mix(in srgb,var(--c) 14%, var(--card)), var(--card));
-    border:1px solid color-mix(in srgb,var(--c) 45%, var(--line)); border-top:3px solid var(--c); }
-  .bb { display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:7px; margin-bottom:7px; }
-  .card a.t { color:var(--fg); font-weight:700; text-decoration:none; font-size:15px; }
-  .card a.t:hover { color:var(--accent); }
-  .card .meta { color:var(--muted); font-size:12.5px; margin:5px 0 0; }
-  .card .date { color:var(--warn); font-weight:600; }
-  .card .desc { font-size:13.5px; margin:7px 0 0; color:#c9d3e0; }
-  .card .tags { margin-top:9px; display:flex; gap:6px; flex-wrap:wrap; }
-  .card .tag { background:#21262d; color:var(--muted); border-radius:12px; padding:2px 9px; font-size:11.5px; }
-  .empty { color:var(--muted); text-align:center; padding:44px; }
-  footer { text-align:center; color:var(--muted); font-size:12px; padding:28px; }
+  section.sec { padding-top:40px; scroll-margin-top:60px; }
+  .sechead { display:flex; align-items:baseline; gap:12px; }
+  .sechead .ix { font-family:var(--mono); font-size:12px; color:var(--mint); letter-spacing:.2em; }
+  .sechead h2 { font-size:21px; font-weight:600; margin:0; letter-spacing:-.01em; }
+  .sechead .ct { font-family:var(--mono); font-size:12px; color:var(--dim); }
+  .sechead::after { content:""; flex:1; height:1px; background:var(--line); align-self:center; }
+
+  /* ---------- Departure board (signature) ---------- */
+  .board { margin-top:16px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    background:linear-gradient(180deg,var(--panel2),var(--panel)); }
+  .board .head, .brow { display:grid; grid-template-columns:88px 1fr 150px 96px; gap:14px; align-items:center;
+    padding:11px 16px; }
+  .board .head { font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--dim); border-bottom:1px solid var(--line); background:rgba(0,0,0,.25); }
+  .brow { border-bottom:1px solid var(--line); text-decoration:none; transition:background .14s;
+    transform-origin:50% 0; }
+  .brow:last-child { border-bottom:0; }
+  .brow:hover { background:rgba(255,182,39,.06); }
+  .brow .flt { font-family:var(--mono); font-size:13px; color:var(--mint); font-weight:600; }
+  .brow .dest { font-weight:600; font-size:15.5px; }
+  .brow .dest .opx { font-family:var(--mono); font-size:11px; padding:1px 7px; border-radius:5px;
+    margin-left:9px; vertical-align:2px; }
+  .brow .dep { font-family:var(--mono); font-size:13px; color:var(--ink); }
+  .brow .cd { font-family:var(--mono); font-size:12px; font-weight:700; text-align:center;
+    color:#0a0a0a; background:var(--amber); border-radius:5px; padding:5px 0; }
+  .brow .cd.soon { background:#ff6b5e; color:#fff; }
+
+  /* ---------- Tickets (card grid) ---------- */
+  .grid { display:grid; gap:13px; margin-top:16px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
+  .grid.feat { grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+  .card { position:relative; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:15px 16px; transition:transform .14s, border-color .14s, box-shadow .14s; overflow:hidden; }
+  .card:hover { transform:translateY(-3px); border-color:var(--mint); box-shadow:0 14px 34px rgba(0,0,0,.4); }
+  .card.feat { background:linear-gradient(165deg, color-mix(in srgb,var(--c) 16%, var(--panel)), var(--panel)); }
+  .card.feat::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--c); }
+  .opx { display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.06em;
+    padding:2px 8px; border-radius:5px; margin-bottom:9px; }
+  .card a.t { font-weight:600; font-size:15.5px; text-decoration:none; letter-spacing:-.01em; }
+  .card:hover a.t { color:var(--mint); }
+  .card .meta { font-family:var(--mono); font-size:11.5px; color:var(--dim); margin-top:6px; letter-spacing:.02em; }
+  .card .meta .dep { color:var(--amber); }
+  .card .desc { font-size:13.5px; color:#c6cdda; margin-top:8px; }
+  .card .tags { margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; }
+  .card .tag { font-family:var(--mono); font-size:11px; color:var(--dim); border:1px solid var(--line);
+    border-radius:5px; padding:1px 7px; }
+  .empty { color:var(--dim); font-family:var(--mono); text-align:center; padding:48px; }
+  footer { border-top:1px solid var(--line); margin-top:48px; padding:26px 0; color:var(--dim);
+    font-family:var(--mono); font-size:12px; }
+
+  @media (max-width:680px){
+    .readout { grid-template-columns:1fr 1fr; }
+    .cell.date { grid-column:1 / -1; }
+    .board .head { display:none; }
+    .brow { grid-template-columns:1fr 78px; gap:8px 12px; }
+    .brow .flt { grid-column:1; } .brow .cd { grid-column:2; grid-row:1 / 3; align-self:center; }
+    .brow .dest { grid-column:1; } .brow .dep { grid-column:1; }
+  }
+  @media (prefers-reduced-motion:reduce){ .flap,.brow{animation:none!important} }
+  :focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
 </style>
 </head>
 <body>
-<header>
-  <h1>🦾 Free AI Resources — learn, use &amp; understand AI</h1>
-  <div class="stamp">
-    <span class="lbl">Updated</span>
-    <span class="date">__TODAY__</span>
-    <span class="sub">__COUNT__ free resources · curated from the top AI labs &amp; the open web</span>
+<header><div class="wrap">
+  <div class="brandline"><span class="eyebrow">Free AI · Departure Board</span></div>
+  <h1>Catch free AI <span class="em">before it leaves the gate.</span></h1>
+  <p class="lede">A living board of free ways to learn, use and understand AI — with the
+    time-sensitive ones boarding first, so you never find out after it's gone.</p>
+  <div class="readout">
+    <div class="cell date"><div class="k">Board updated</div><div class="v" id="datev"></div></div>
+    <div class="cell small"><div class="k">On board</div><div class="v">__COUNT__</div></div>
+    <div class="cell small"><div class="k">Boarding soon</div><div class="v" id="soonv">—</div></div>
   </div>
-</header>
+</div></header>
 
-<div class="labs">
-  <div class="t">Top AI labs</div>
-  <div class="chips" id="chips"></div>
-</div>
-<div class="search"><input id="q" placeholder="Search across every category…"></div>
-<nav class="jump" id="nav"></nav>
-<main id="list"></main>
-<div class="empty" id="empty" style="display:none">No resources match.</div>
-<footer>Generated by free-yolo · data is open, contributions welcome.</footer>
+<div class="operators"><div class="wrap">
+  <span class="eyebrow">Operators · top AI labs</span>
+  <div class="ops" id="ops"></div>
+</div></div>
+
+<div class="toolbar"><div class="wrap">
+  <input id="q" placeholder="search the board…">
+</div></div>
+
+<nav class="jump"><div class="wrap"><div class="row" id="nav"></div></div></nav>
+
+<main class="wrap" id="list"></main>
+<div class="empty wrap" id="empty" style="display:none">No departures match. Clear the filter to see the full board.</div>
+<footer><div class="wrap">free-yolo · open data · the board refreshes daily, scouts the web weekly.</div></footer>
 
 <script>
 const DATA = __DATA__;
@@ -144,117 +211,137 @@ const TODAY = "__TODAY__";
 const TYPE_ORDER = __TYPE_ORDER__;
 const TYPE_LABEL = __TYPE_LABEL__;
 
-// Brand registry. Order matters: co-branded providers resolve to the first match
-// (e.g. "DeepLearning.AI + OpenAI" → DeepLearning.AI, the host).
 const BRANDS = [
-  {key:'anthropic',      label:'Anthropic',       color:'#d97757', fg:'#fff', match:['anthropic'],               top:true},
-  {key:'deeplearningai', label:'DeepLearning.AI',  color:'#e11d48', fg:'#fff', match:['deeplearning'],            top:true},
-  {key:'huggingface',    label:'Hugging Face',     color:'#ffd21e', fg:'#1a1a1a', match:['hugging face','huggingface'], top:true},
-  {key:'openai',         label:'OpenAI',           color:'#10a37f', fg:'#fff', match:['openai'],                  top:true},
-  {key:'google',         label:'Google',           color:'#4285f4', fg:'#fff', match:['google','deepmind','kaggle'], top:true},
-  {key:'microsoft',      label:'Microsoft',        color:'#00a4ef', fg:'#fff', match:['microsoft'],               top:true},
-  {key:'meta',           label:'Meta',             color:'#0866ff', fg:'#fff', match:['meta'],                    top:true},
-  {key:'nvidia',         label:'NVIDIA',           color:'#76b900', fg:'#1a1a1a', match:['nvidia'],               top:true},
-  {key:'stanford',       label:'Stanford',         color:'#8c1515', fg:'#fff', match:['stanford'],                top:false},
-  {key:'mit',            label:'MIT',              color:'#a31f34', fg:'#fff', match:['mit'],                     top:false},
-  {key:'fastai',         label:'fast.ai',          color:'#8a3ffc', fg:'#fff', match:['fast.ai'],                 top:false},
+  {key:'anthropic',      label:'Anthropic',      code:'ANT', color:'#d97757', match:['anthropic'],               top:true},
+  {key:'deeplearningai', label:'DeepLearning.AI', code:'DLA', color:'#f43f5e', match:['deeplearning'],            top:true},
+  {key:'huggingface',    label:'Hugging Face',   code:'HUG', color:'#ffd21e', match:['hugging face','huggingface'], top:true},
+  {key:'openai',         label:'OpenAI',         code:'OAI', color:'#10a37f', match:['openai'],                  top:true},
+  {key:'google',         label:'Google',         code:'GOO', color:'#4285f4', match:['google','deepmind','kaggle'], top:true},
+  {key:'microsoft',      label:'Microsoft',      code:'MSF', color:'#3bb1ff', match:['microsoft'],               top:true},
+  {key:'meta',           label:'Meta',           code:'MET', color:'#0866ff', match:['meta'],                    top:true},
+  {key:'nvidia',         label:'NVIDIA',         code:'NVD', color:'#76b900', match:['nvidia'],                  top:true},
+  {key:'stanford',       label:'Stanford',       code:'STA', color:'#b1322f', match:['stanford'],                top:false},
+  {key:'mit',            label:'MIT',            code:'MIT', color:'#c2415a', match:['mit'],                     top:false},
+  {key:'fastai',         label:'fast.ai',        code:'FST', color:'#9a6bff', match:['fast.ai'],                 top:false},
 ];
-function brandFor(provider) {
-  const p = (provider||'').toLowerCase();
-  return BRANDS.find(b => b.match.some(m => p.includes(m))) || null;
+function brandFor(p){ p=(p||'').toLowerCase(); return BRANDS.find(b=>b.match.some(m=>p.includes(m)))||null; }
+const esc = s => (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const onDark = hex => { const n=parseInt(hex.slice(1),16),l=(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255)); return l>150?'#0a0a0a':'#fff'; };
+function days(d){ return Math.round((new Date(d)-new Date(TODAY))/86400000); }
+
+// ---- giant date as split-flap characters ----
+(function(){
+  const host=document.getElementById('datev');
+  TODAY.split('').forEach((ch,i)=>{
+    const s=document.createElement('span'); s.className='flap'; s.textContent=ch;
+    s.style.animation='flap .5s cubic-bezier(.2,.8,.2,1) both'; s.style.animationDelay=(i*55)+'ms';
+    host.appendChild(s);
+  });
+})();
+const _kf=document.createElement('style');
+_kf.textContent='@keyframes flap{from{transform:rotateX(-90deg);opacity:0}to{transform:rotateX(0);opacity:1}}';
+document.head.appendChild(_kf);
+
+function opTag(br,cls){ if(!br) return '';
+  return `<span class="${cls}" style="background:${br.color};color:${onDark(br.color)}">${br.label}</span>`; }
+
+// ---- departure board rows (signature) ----
+function boardRow(r,i){
+  const br=brandFor(r.provider), n=days(r.event_date);
+  const cd = n<=0?'NOW':('T-'+n+'d');
+  const blob=(r.title+' '+r.provider+' '+r.description+' '+(r.topics||[]).join(' ')).toLowerCase();
+  const flt=(br?br.code:'OPN')+'·'+String(100+i*37%900).padStart(3,'0');
+  return `<a class="brow card" href="${esc(r.url)}" target="_blank" rel="noopener"
+     data-s="${esc(blob)}" data-brand="${br?br.key:''}" style="animation:flap .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:${120+i*70}ms">
+    <span class="flt">${flt}</span>
+    <span class="dest">${esc(r.title)}${opTag(br,'opx')}</span>
+    <span class="dep">${r.event_date}</span>
+    <span class="cd ${n<=10?'soon':''}">${cd}</span>
+  </a>`;
 }
 
-const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function daysLabel(d) {
-  const n = Math.round((new Date(d) - new Date(TODAY)) / 86400000);
-  if (isNaN(n)) return '';
-  return n <= 0 ? ' · today' : ' · in ' + n + 'd';
-}
-
-function cardHTML(r, feat) {
-  const br = brandFor(r.provider);
-  const blob = (r.title+' '+r.provider+' '+r.description+' '+(r.topics||[]).join(' ')).toLowerCase();
-  const date = r.event_date ? `<span class="date">📅 ${r.event_date}${daysLabel(r.event_date)}</span>` : '';
-  const badge = br ? `<span class="bb" style="background:${br.color};color:${br.fg}">${esc(br.label)}</span>` : '';
-  const meta = [(!br && r.provider) ? esc(r.provider) : '', r.type, date].filter(Boolean).join(' · ');
-  const cls = (feat ? 'fcard card' : 'card') + (r.event_date ? ' dated' : '');
-  const style = (feat && br) ? ` style="--c:${br.color}"` : '';
-  const tags = (r.topics||[]).map(t => `<span class="tag">${esc(t)}</span>`).join('');
-  return `<div class="${cls}"${style} data-s="${esc(blob)}" data-brand="${br?br.key:''}">
-    ${badge}
+function ticket(r,feat){
+  const br=brandFor(r.provider);
+  const blob=(r.title+' '+r.provider+' '+r.description+' '+(r.topics||[]).join(' ')).toLowerCase();
+  const dep=r.event_date?` · <span class="dep">DEP ${r.event_date} · T-${Math.max(0,days(r.event_date))}d</span>`:'';
+  const meta=[(!br&&r.provider)?esc(r.provider.toUpperCase()):'', r.type.toUpperCase()].filter(Boolean).join(' · ')+dep;
+  const tags=(r.topics||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+  const style=(feat&&br)?` style="--c:${br.color}"`:'';
+  return `<div class="card ${feat?'feat':''}"${style} data-s="${esc(blob)}" data-brand="${br?br.key:''}">
+    ${opTag(br,'opx')}
     <a class="t" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
     <div class="meta">${meta}</div>
-    ${(!feat && r.description) ? `<div class="desc">${esc(r.description)}</div>` : ''}
-    ${tags ? `<div class="tags">${tags}</div>` : ''}
+    ${(!feat&&r.description)?`<div class="desc">${esc(r.description)}</div>`:''}
+    ${tags?`<div class="tags">${tags}</div>`:''}
   </div>`;
 }
 
-function sectionHTML(s) {
-  return `<section class="sec" id="${s.id}">
-    <h2>${s.label} <span class="badge">(${s.items.length})</span></h2>
-    <div class="grid ${s.feat?'feat':''}">${s.items.map(r => cardHTML(r, s.feat)).join('')}</div>
-  </section>`;
+// ---- assemble sections ----
+const FEATURED_ORDER=['google','openai','anthropic','huggingface','microsoft','meta','deeplearningai','nvidia'];
+const RANK={tool:0,course:1,tutorial:2,video:3,book:4};
+const featured=[];
+for(const k of FEATURED_ORDER){
+  const it=DATA.filter(r=>{const b=brandFor(r.provider);return b&&b.key===k&&r.source==='seed'&&r.type!=='event';})
+    .sort((a,b)=>(RANK[a.type]??9)-(RANK[b.type]??9));
+  featured.push(...it.slice(0,2));
 }
+const soon=DATA.filter(r=>r.event_date).sort((a,b)=>a.event_date.localeCompare(b.event_date));
+document.getElementById('soonv').textContent=soon.length||'0';
 
-// ---- Featured band: a couple of flagship picks per top lab (curated seeds) ----
-const FEATURED_ORDER = ['google','openai','anthropic','huggingface','microsoft','meta','deeplearningai','nvidia'];
-const RANK = {tool:0, course:1, tutorial:2, video:3, book:4};
-const featured = [];
-for (const k of FEATURED_ORDER) {
-  const items = DATA.filter(r => { const b = brandFor(r.provider); return b && b.key === k && r.source === 'seed' && r.type !== 'event'; })
-    .sort((a,b) => (RANK[a.type]??9) - (RANK[b.type]??9));
-  featured.push(...items.slice(0, 2));
-}
+const sections=[];
+if(soon.length)     sections.push({id:'board',key:'BRD',label:'Boarding soon',items:soon,kind:'board'});
+if(featured.length) sections.push({id:'featured',key:'FEA',label:'From the top AI labs',items:featured,kind:'feat'});
+TYPE_ORDER.forEach(t=>{
+  const it=DATA.filter(r=>r.type===t).sort((a,b)=>a.title.localeCompare(b.title));
+  if(it.length) sections.push({id:'type-'+t,key:t.slice(0,3).toUpperCase(),label:TYPE_LABEL[t],items:it,kind:'grid'});
+});
 
-const sections = [];
-if (featured.length) sections.push({id:'featured', emoji:'⭐', label:'⭐ From the top AI labs', items:featured, feat:true, cls:'featured'});
-const soon = DATA.filter(r => r.event_date).sort((a,b) => a.event_date.localeCompare(b.event_date));
-if (soon.length) sections.push({id:'soon', emoji:'⏰', label:'⏰ Closing soon', items:soon, cls:'soon'});
-for (const t of TYPE_ORDER) {
-  const items = DATA.filter(r => r.type === t).sort((a,b) => a.title.localeCompare(b.title));
-  if (items.length) sections.push({id:'type-'+t, emoji:TYPE_LABEL[t].split(' ')[0], label:TYPE_LABEL[t], items});
-}
-
-document.getElementById('list').innerHTML = sections.map(sectionHTML).join('');
-document.getElementById('nav').innerHTML = sections.map(s =>
-  `<a href="#${s.id}" data-sec="${s.id}" class="${s.cls||''}" title="${esc(s.label)}">${s.emoji}<span class="nb">${s.items.length}</span></a>`
-).join('');
-
-// ---- Top-lab filter chips ----
-const present = BRANDS.filter(b => b.top).map(b => ({...b, count: DATA.filter(r => brandFor(r.provider)?.key === b.key).length}))
-  .filter(b => b.count > 0);
-document.getElementById('chips').innerHTML = present.map(b =>
-  `<button class="chip" data-b="${b.key}" style="--c:${b.color}">${esc(b.label)}<span>${b.count}</span></button>`
-).join('');
-
-let activeBrand = '';
-const q = document.getElementById('q'), empty = document.getElementById('empty');
-
-function applyFilter() {
-  const term = q.value.toLowerCase();
-  let total = 0;
-  for (const sec of document.querySelectorAll('.sec')) {
-    let vis = 0;
-    for (const card of sec.querySelectorAll('.card')) {
-      const m = (!term || card.dataset.s.includes(term)) && (!activeBrand || card.dataset.brand === activeBrand);
-      card.style.display = m ? '' : 'none';
-      if (m) vis++;
-    }
-    total += vis;
-    sec.style.display = vis ? '' : 'none';
-    const b = sec.querySelector('.badge'); if (b) b.textContent = '(' + vis + ')';
-    const nav = document.querySelector(`nav a[data-sec="${sec.id}"]`);
-    if (nav) { nav.style.display = vis ? '' : 'none'; const nb = nav.querySelector('.nb'); if (nb) nb.textContent = vis; }
+function sectionHTML(s,n){
+  const head=`<div class="sechead"><span class="ix">${String(n+1).padStart(2,'0')}</span>
+    <h2>${esc(s.label)}</h2><span class="ct">${s.items.length}</span></div>`;
+  if(s.kind==='board'){
+    return `<section class="sec" id="${s.id}">${head}
+      <div class="board"><div class="head"><span>Flight</span><span>Destination</span><span>Departs</span><span>Countdown</span></div>
+      ${s.items.map((r,i)=>boardRow(r,i)).join('')}</div></section>`;
   }
-  empty.style.display = total ? 'none' : '';
+  return `<section class="sec" id="${s.id}">${head}
+    <div class="grid ${s.kind==='feat'?'feat':''}">${s.items.map(r=>ticket(r,s.kind==='feat')).join('')}</div></section>`;
 }
 
-q.addEventListener('input', applyFilter);
-document.getElementById('chips').addEventListener('click', e => {
-  const btn = e.target.closest('.chip'); if (!btn) return;
-  const key = btn.dataset.b;
-  activeBrand = activeBrand === key ? '' : key;
-  for (const c of document.querySelectorAll('.chip')) c.classList.toggle('active', c.dataset.b === activeBrand);
+document.getElementById('list').innerHTML=sections.map(sectionHTML).join('');
+document.getElementById('nav').innerHTML=sections.map(s=>
+  `<a href="#${s.id}" data-sec="${s.id}" class="${s.kind==='board'?'board':''}">${esc(s.label)}<span class="nb">${s.items.length}</span></a>`
+).join('');
+
+// ---- operators ----
+const present=BRANDS.filter(b=>b.top).map(b=>({...b,count:DATA.filter(r=>brandFor(r.provider)?.key===b.key).length})).filter(b=>b.count>0);
+document.getElementById('ops').innerHTML=present.map(b=>
+  `<button class="op" data-b="${b.key}" style="--c:${b.color}"><span class="dot"></span>${esc(b.label)}<span class="n">${b.count}</span></button>`
+).join('');
+
+// ---- filtering ----
+let activeBrand='';
+const q=document.getElementById('q'), empty=document.getElementById('empty');
+function applyFilter(){
+  const term=q.value.toLowerCase(); let total=0;
+  document.querySelectorAll('.sec').forEach(sec=>{
+    let vis=0;
+    sec.querySelectorAll('.card').forEach(c=>{
+      const m=(!term||c.dataset.s.includes(term))&&(!activeBrand||c.dataset.brand===activeBrand);
+      c.style.display=m?'':'none'; if(m)vis++;
+    });
+    total+=vis; sec.style.display=vis?'':'none';
+    const ct=sec.querySelector('.ct'); if(ct)ct.textContent=vis;
+    const nav=document.querySelector(`nav a[data-sec="${sec.id}"]`);
+    if(nav){nav.style.display=vis?'':'none'; const nb=nav.querySelector('.nb'); if(nb)nb.textContent=vis;}
+  });
+  empty.style.display=total?'none':'';
+}
+q.addEventListener('input',applyFilter);
+document.getElementById('ops').addEventListener('click',e=>{
+  const b=e.target.closest('.op'); if(!b)return;
+  activeBrand=activeBrand===b.dataset.b?'':b.dataset.b;
+  document.querySelectorAll('.op').forEach(o=>o.classList.toggle('active',o.dataset.b===activeBrand));
   applyFilter();
 });
 </script>

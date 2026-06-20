@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Local catalog DB (regenerate with `freeyolo collect`).
+# Commit it instead if you want found_at history to persist across machines.
+data/resources.db

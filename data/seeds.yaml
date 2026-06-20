@@ -1,0 +1,630 @@
+# Curated free AI resources — hand-verified backbone of the catalog.
+# Web-verified 2026-06-19. Fields: title, url, type, provider, cost,
+# description, topics, event_date(optional), notes(optional).
+# cost: free | free-account | freemium
+
+# ============================================================
+# COURSES — GenAI / LLM / Agents
+# ============================================================
+- title: DeepLearning.AI Short Courses (catalog)
+  url: https://www.deeplearning.ai/courses/?types=short_course
+  type: course
+  provider: DeepLearning.AI
+  cost: free-account
+  description: Catalog of 1-2 hour hands-on GenAI short courses with industry partners; free to audit.
+  topics: [llm, prompting, rag, agents]
+
+- title: ChatGPT Prompt Engineering for Developers
+  url: https://www.deeplearning.ai/short-courses/chatgpt-prompt-engineering-for-developers/
+  type: course
+  provider: DeepLearning.AI + OpenAI
+  cost: free-account
+  description: Andrew Ng and Isa Fulford on prompt engineering best practices with the OpenAI API.
+  topics: [prompting, llm]
+
+- title: Building Systems with the ChatGPT API
+  url: https://www.deeplearning.ai/short-courses/building-systems-with-chatgpt/
+  type: course
+  provider: DeepLearning.AI + OpenAI
+  cost: free-account
+  description: Build multi-step LLM apps by chaining and orchestrating ChatGPT API calls.
+  topics: [llm, prompting]
+
+- title: LangChain for LLM Application Development
+  url: https://www.deeplearning.ai/short-courses/langchain-for-llm-application-development/
+  type: course
+  provider: DeepLearning.AI + LangChain
+  cost: free-account
+  description: Models, prompts, chains, memory, and agents for LLM apps with LangChain.
+  topics: [llm, agents]
+
+- title: Functions, Tools and Agents with LangChain
+  url: https://www.deeplearning.ai/short-courses/functions-tools-agents-langchain/
+  type: course
+  provider: DeepLearning.AI + LangChain
+  cost: free-account
+  description: LLM function/tool calling and building agents with LangChain Expression Language.
+  topics: [agents, llm]
+
+- title: Finetuning Large Language Models
+  url: https://www.deeplearning.ai/short-courses/finetuning-large-language-models/
+  type: course
+  provider: DeepLearning.AI + Lamini
+  cost: free-account
+  description: When and how to fine-tune an LLM — data prep, training, and evaluation.
+  topics: [fine-tuning, llm]
+
+- title: Building and Evaluating Advanced RAG
+  url: https://www.deeplearning.ai/short-courses/building-evaluating-advanced-rag/
+  type: course
+  provider: DeepLearning.AI + LlamaIndex/TruEra
+  cost: free-account
+  description: Advanced retrieval techniques and RAG evaluation metrics (the RAG triad).
+  topics: [rag, evals]
+
+- title: Hugging Face LLM Course
+  url: https://huggingface.co/learn/llm-course
+  type: course
+  provider: Hugging Face
+  cost: free
+  description: Transformers, NLP, and LLMs using the Hugging Face ecosystem (formerly the NLP course).
+  topics: [llm, nlp, fundamentals]
+
+- title: Hugging Face Agents Course
+  url: https://huggingface.co/learn/agents-course
+  type: course
+  provider: Hugging Face
+  cost: free
+  description: Build and deploy AI agents, from fundamentals to smolagents and LangGraph.
+  topics: [agents, llm]
+
+- title: Hugging Face Deep RL Course
+  url: https://huggingface.co/learn/deep-rl-course
+  type: course
+  provider: Hugging Face
+  cost: free
+  description: Hands-on deep reinforcement learning, training agents and sharing them on the Hub.
+  topics: [deep-learning, fundamentals]
+
+- title: Hugging Face Open-Source AI Cookbook
+  url: https://huggingface.co/learn/cookbook/index
+  type: tutorial
+  provider: Hugging Face
+  cost: free
+  description: Practical notebooks for RAG, agents, and fine-tuning.
+  topics: [rag, agents, fine-tuning, llm]
+
+- title: Generative AI for Beginners
+  url: https://github.com/microsoft/generative-ai-for-beginners
+  type: course
+  provider: Microsoft
+  cost: free
+  description: 21-lesson course on building GenAI apps with Python/TypeScript; prompting, RAG, agents.
+  topics: [llm, prompting, rag, agents]
+
+- title: AI Agents for Beginners
+  url: https://github.com/microsoft/ai-agents-for-beginners
+  type: course
+  provider: Microsoft
+  cost: free
+  description: ~18-lesson course on building AI agents, from frameworks to production and security.
+  topics: [agents, llm, safety]
+
+- title: Anthropic Academy
+  url: https://anthropic.com/learn
+  type: course
+  provider: Anthropic
+  cost: free-account
+  description: Self-paced courses on Claude, the API, MCP, and AI fluency.
+  topics: [llm, prompting, agents]
+
+- title: Anthropic Courses (GitHub)
+  url: https://github.com/anthropics/courses
+  type: course
+  provider: Anthropic
+  cost: free
+  description: Open-source courses (prompt engineering, API, tool use) as runnable notebooks.
+  topics: [llm, prompting, agents]
+
+- title: Full Stack LLM Bootcamp
+  url: https://fullstackdeeplearning.com/llm-bootcamp/
+  type: course
+  provider: The Full Stack
+  cost: free
+  description: Recorded bootcamp on building LLM apps — prompt engineering, LLMOps, augmented models, UX.
+  topics: [llm, prompting, mlops, rag]
+
+# ============================================================
+# COURSES — Fundamentals / Deep Learning
+# ============================================================
+- title: Practical Deep Learning for Coders
+  url: https://course.fast.ai/
+  type: course
+  provider: fast.ai
+  cost: free
+  description: Top-down course to build and deploy SOTA deep learning models, with book and videos.
+  topics: [deep-learning, computer-vision, nlp]
+
+- title: Machine Learning Crash Course
+  url: https://developers.google.com/machine-learning/crash-course
+  type: course
+  provider: Google for Developers
+  cost: free
+  description: Fast-paced practical ML intro with animated videos, interactive viz, and exercises.
+  topics: [fundamentals, deep-learning, ml-math]
+
+- title: Introduction to Generative AI (learning path)
+  url: https://www.skills.google/paths/118
+  type: course
+  provider: Google Cloud
+  cost: free-account
+  description: Beginner non-technical path on GenAI, LLMs, and responsible AI with skill badges.
+  topics: [fundamentals, llm, safety]
+  notes: cloudskillsboost.google rebranded to skills.google; old links redirect.
+
+- title: Kaggle Learn — Intro to Machine Learning
+  url: https://www.kaggle.com/learn/intro-to-machine-learning
+  type: course
+  provider: Kaggle
+  cost: free-account
+  description: Hands-on micro-course on core ML models, validation, and overfitting in Python.
+  topics: [fundamentals, mlops]
+
+- title: Kaggle Learn — Intro to Deep Learning
+  url: https://www.kaggle.com/learn/intro-to-deep-learning
+  type: course
+  provider: Kaggle
+  cost: free-account
+  description: Build and train neural networks with TensorFlow/Keras.
+  topics: [deep-learning, fundamentals]
+
+- title: Kaggle Learn — Intro to AI Ethics
+  url: https://www.kaggle.com/learn/intro-to-ai-ethics
+  type: course
+  provider: Kaggle
+  cost: free-account
+  description: Practical tools for applying AI responsibly — fairness, bias, model cards.
+  topics: [safety]
+
+- title: Elements of AI — Introduction to AI
+  url: https://www.elementsofai.com/
+  type: course
+  provider: University of Helsinki + MinnaLearn
+  cost: free
+  description: Non-technical intro to AI fundamentals for everyone; no advanced math or coding.
+  topics: [fundamentals]
+
+- title: MIT 6.S191 — Introduction to Deep Learning
+  url: https://introtodeeplearning.com/
+  type: course
+  provider: MIT
+  cost: free
+  description: MIT's high-intensity deep learning bootcamp with lectures, labs, and GenAI coverage.
+  topics: [deep-learning, fundamentals, llm]
+
+- title: Made With ML
+  url: https://madewithml.com/
+  type: course
+  provider: Anyscale (Goku Mohandas)
+  cost: freemium
+  description: ML engineering + MLOps — design, develop, deploy production ML; written content free.
+  topics: [mlops, fundamentals, deep-learning]
+
+- title: Full Stack Deep Learning (2022)
+  url: https://fullstackdeeplearning.com/course/2022/
+  type: course
+  provider: Full Stack Deep Learning
+  cost: free
+  description: Building and deploying ML-powered products; lectures and labs free forever.
+  topics: [mlops, deep-learning, llm]
+
+- title: Weights & Biases Courses
+  url: https://wandb.ai/site/courses/
+  type: course
+  provider: Weights & Biases
+  cost: free-account
+  description: Free hands-on courses on MLOps, LLM apps, evals, and experiment tracking.
+  topics: [mlops, evals, llm]
+
+# ============================================================
+# UNIVERSITY (Stanford / public)
+# ============================================================
+- title: Stanford CS229 — Machine Learning (lectures)
+  url: https://www.youtube.com/playlist?list=PLoROMvodv4rMiGQp3WXShtMGgzqpfVfbU
+  type: video
+  provider: Stanford University
+  cost: free
+  description: Andrew Ng's full ~27-hour ML lecture series; course site at cs229.stanford.edu.
+  topics: [fundamentals, ml-math, deep-learning]
+
+- title: Stanford CS224n — NLP with Deep Learning
+  url: https://web.stanford.edu/class/cs224n/
+  type: course
+  provider: Stanford University
+  cost: free
+  description: Neural networks for NLP, from word vectors to Transformers and LLMs; public slides/notes.
+  topics: [nlp, deep-learning, llm]
+  notes: lecture videos on the Stanford Online YouTube channel.
+
+- title: Stanford CS231n — Deep Learning for Computer Vision (notes)
+  url: https://cs231n.github.io/
+  type: tutorial
+  provider: Stanford University
+  cost: free
+  description: Detailed public notes on CNNs and DL for visual recognition, plus a Python/NumPy tutorial.
+  topics: [computer-vision, deep-learning, ml-math]
+
+# ============================================================
+# VIDEO
+# ============================================================
+- title: "Neural Networks: Zero to Hero"
+  url: https://karpathy.ai/zero-to-hero.html
+  type: video
+  provider: Andrej Karpathy
+  cost: free
+  description: Build neural nets from scratch in code, from backprop (micrograd) up to GPT.
+  topics: [deep-learning, llm, fundamentals]
+
+- title: 3Blue1Brown — Neural Networks series
+  url: https://www.3blue1brown.com/lessons/neural-networks
+  type: video
+  provider: 3Blue1Brown (Grant Sanderson)
+  cost: free
+  description: Visual, intuition-first explanation of neural nets, gradient descent, and backprop.
+  topics: [deep-learning, ml-math, fundamentals]
+
+- title: freeCodeCamp — Learn Machine Learning
+  url: https://www.freecodecamp.org/news/learn-machine-learning-in-2024/
+  type: video
+  provider: freeCodeCamp
+  cost: free
+  description: Free 4.5-hour beginner ML video course (regression, classification, end-to-end project).
+  topics: [fundamentals, ml-math]
+
+# ============================================================
+# BOOKS
+# ============================================================
+- title: Dive into Deep Learning (D2L)
+  url: https://d2l.ai/
+  type: book
+  provider: Zhang, Lipton, Li, Smola
+  cost: free
+  description: Interactive open DL book with runnable code in PyTorch, TensorFlow, JAX, MXNet.
+  topics: [deep-learning, fundamentals, nlp, computer-vision]
+
+- title: Understanding Deep Learning
+  url: https://udlbook.github.io/udlbook/
+  type: book
+  provider: Simon J.D. Prince (MIT Press)
+  cost: free
+  description: Modern DL textbook with free PDF, notebooks, and slides.
+  topics: [deep-learning, fundamentals, ml-math]
+
+- title: Deep Learning
+  url: https://www.deeplearningbook.org/
+  type: book
+  provider: Goodfellow, Bengio, Courville (MIT Press)
+  cost: free
+  description: The foundational deep learning textbook, complete and free to read online.
+  topics: [deep-learning, ml-math, fundamentals]
+
+- title: Mathematics for Machine Learning
+  url: https://mml-book.github.io/
+  type: book
+  provider: Deisenroth, Faisal, Ong (Cambridge)
+  cost: free
+  description: Linear algebra, calculus, and probability foundations behind ML; free PDF.
+  topics: [ml-math, fundamentals]
+
+- title: Speech and Language Processing (3rd ed. draft)
+  url: https://web.stanford.edu/~jurafsky/slp3/
+  type: book
+  provider: Jurafsky & Martin (Stanford)
+  cost: free
+  description: The canonical NLP textbook; full draft PDF freely downloadable.
+  topics: [nlp, llm, fundamentals]
+
+- title: "Probabilistic Machine Learning: An Introduction"
+  url: https://probml.github.io/pml-book/book1.html
+  type: book
+  provider: Kevin P. Murphy (MIT Press)
+  cost: free
+  description: Comprehensive probabilistic ML textbook with a free draft PDF.
+  topics: [ml-math, deep-learning, fundamentals]
+
+- title: Machine Learning Engineering
+  url: https://www.mlebook.com/
+  type: book
+  provider: Andriy Burkov
+  cost: free
+  description: Best-practices guide to reliable, scalable ML systems; free read-first draft.
+  topics: [mlops, fundamentals]
+
+# ============================================================
+# PAPERS / PROMPTING
+# ============================================================
+- title: Attention Is All You Need
+  url: https://arxiv.org/abs/1706.03762
+  type: paper
+  provider: Vaswani et al. (Google)
+  cost: free
+  description: The 2017 paper introducing the Transformer architecture behind modern LLMs.
+  topics: [llm, deep-learning, nlp]
+
+- title: Prompt Engineering Guide
+  url: https://www.promptingguide.ai/
+  type: tutorial
+  provider: DAIR.AI
+  cost: free
+  description: Comprehensive open guide to prompting techniques.
+  topics: [prompting, llm]
+
+- title: Anthropic Prompt Engineering Interactive Tutorial
+  url: https://github.com/anthropics/prompt-eng-interactive-tutorial
+  type: tutorial
+  provider: Anthropic
+  cost: free
+  description: Free 9-chapter hands-on tutorial with exercises for prompting Claude.
+  topics: [prompting, llm]
+
+- title: Learn Prompting
+  url: https://learnprompting.org/
+  type: tutorial
+  provider: Learn Prompting
+  cost: freemium
+  description: Beginner-friendly prompt engineering with substantial free content.
+  topics: [prompting, llm]
+
+# ============================================================
+# TUTORIALS / COOKBOOKS
+# ============================================================
+- title: Anthropic Cookbook (Claude Cookbooks)
+  url: https://github.com/anthropics/claude-cookbooks
+  type: tutorial
+  provider: Anthropic
+  cost: free
+  description: Notebook recipes for building with Claude — RAG, tool use, vision, prompt caching.
+  topics: [llm, rag, prompting, agents]
+
+- title: OpenAI Cookbook
+  url: https://developers.openai.com/cookbook
+  type: tutorial
+  provider: OpenAI
+  cost: free
+  description: Code examples and guides for the OpenAI API — embeddings, RAG, function calling, evals.
+  topics: [llm, rag, prompting, evals]
+
+- title: LangChain Documentation
+  url: https://docs.langchain.com/oss/python/langchain/overview
+  type: tutorial
+  provider: LangChain
+  cost: free
+  description: Official open-source docs for building LLM apps, RAG pipelines, and agents.
+  topics: [rag, agents, llm]
+
+- title: LlamaIndex Documentation
+  url: https://developers.llamaindex.ai/python/framework/
+  type: tutorial
+  provider: LlamaIndex
+  cost: free
+  description: Framework docs focused on data indexing and RAG over your own data.
+  topics: [rag, llm, agents]
+
+# ============================================================
+# EVALS / SAFETY
+# ============================================================
+- title: OpenAI Evals
+  url: https://github.com/openai/evals
+  type: tool
+  provider: OpenAI
+  cost: free
+  description: Open-source framework for evaluating LLMs and LLM-based systems.
+  topics: [evals, llm]
+
+- title: Hugging Face Evaluate
+  url: https://huggingface.co/docs/evaluate/index
+  type: tool
+  provider: Hugging Face
+  cost: free
+  description: Open-source library of metrics and tools for evaluating models and datasets.
+  topics: [evals, mlops]
+
+- title: AI Safety Fundamentals (BlueDot Impact)
+  url: https://bluedot.org/courses
+  type: course
+  provider: BlueDot Impact
+  cost: free
+  description: Self-paced AI safety and alignment courses (aisafetyfundamentals.com redirects here).
+  topics: [safety, llm]
+
+- title: Anthropic Alignment Science Blog
+  url: https://alignment.anthropic.com/
+  type: tutorial
+  provider: Anthropic
+  cost: free
+  description: Public research posts on steering and controlling powerful AI systems.
+  topics: [safety, evals, llm]
+
+# ============================================================
+# DATASETS / TOOLS / COMMUNITIES / NEWSLETTERS
+# ============================================================
+- title: Hugging Face Datasets Hub
+  url: https://huggingface.co/datasets
+  type: dataset
+  provider: Hugging Face
+  cost: free
+  description: Over a million public datasets browsable and downloadable.
+  topics: [nlp, computer-vision, fundamentals]
+
+- title: Google Dataset Search
+  url: https://datasetsearch.research.google.com/
+  type: dataset
+  provider: Google
+  cost: free
+  description: Search engine for discovering publicly available datasets across the web.
+  topics: [fundamentals]
+
+- title: Google Colab
+  url: https://colab.research.google.com/
+  type: tool
+  provider: Google
+  cost: free-account
+  description: Hosted Jupyter notebooks with a free GPU/TPU tier.
+  topics: [deep-learning, mlops, fundamentals]
+
+- title: Ollama
+  url: https://ollama.com/
+  type: tool
+  provider: Ollama
+  cost: freemium
+  description: Open-source tool to run LLMs locally; free local use.
+  topics: [llm, agents, rag]
+
+- title: LM Studio
+  url: https://lmstudio.ai/
+  type: tool
+  provider: LM Studio
+  cost: freemium
+  description: Free desktop app to discover, download, and run local LLMs.
+  topics: [llm, prompting]
+
+- title: r/LocalLLaMA
+  url: https://www.reddit.com/r/LocalLLaMA/
+  type: community
+  provider: Reddit
+  cost: free
+  description: Active community for running and fine-tuning open LLMs locally.
+  topics: [llm, fine-tuning, prompting]
+
+- title: EleutherAI
+  url: https://www.eleuther.ai/
+  type: community
+  provider: EleutherAI
+  cost: free
+  description: Open research collective with a public Discord for open LLMs and interpretability.
+  topics: [llm, safety, deep-learning]
+
+- title: The Batch
+  url: https://www.deeplearning.ai/the-batch/
+  type: newsletter
+  provider: DeepLearning.AI (Andrew Ng)
+  cost: free
+  description: Weekly AI news and insights newsletter.
+  topics: [llm, deep-learning, fundamentals]
+
+- title: Ahead of AI
+  url: https://magazine.sebastianraschka.com/
+  type: newsletter
+  provider: Sebastian Raschka
+  cost: freemium
+  description: LLM research and ML engineering with substantial free content.
+  topics: [llm, deep-learning, ml-math]
+
+- title: Import AI
+  url: https://importai.substack.com/
+  type: newsletter
+  provider: Jack Clark
+  cost: free
+  description: Weekly newsletter analyzing cutting-edge AI research and policy.
+  topics: [safety, llm, deep-learning]
+
+# ============================================================
+# TIME-SENSITIVE / RECURRING OPPORTUNITIES
+# (event_date = next deadline; past dates auto-expire and hide)
+# ============================================================
+- title: Google + Kaggle 5-Day Intensive (Gen AI / AI Agents)
+  url: https://www.kaggle.com/learn-guide/5-day-agents
+  type: event
+  provider: Google / Kaggle
+  cost: free-account
+  description: Free 5-day LIVE intensive — daily livestreams, notebooks, Discord, optional capstone/badge. The program we missed; recurs ~twice a year (Jun 2026 cohort focused on AI agents & vibe coding), materials stay self-paced.
+  topics: [llm, prompting, rag, agents]
+  event_date: 2026-07-06
+  notes: Jun 2026 cohort ran Jun 15-19; capstone deadline Jul 6. Monitor blog.google + Kaggle blog/Discord (~2-4 weeks ahead) — highest signal. Gen-AI edition guide at kaggle.com/learn-guide/5-day-genai.
+
+- title: Kaggle Playground Series
+  url: https://www.kaggle.com/competitions
+  type: event
+  provider: Kaggle
+  cost: free-account
+  description: Beginner-friendly monthly ML competition; free, no application. New episode ~1st of each month.
+  topics: [fundamentals, mlops]
+  notes: Most predictable recurring free practice. Watch kaggle.com/competitions.
+
+- title: BlueDot — Technical AI Safety course (cohort)
+  url: https://bluedot.org/courses/technical-ai-safety
+  type: event
+  provider: BlueDot Impact
+  cost: free
+  description: Facilitated AI safety cohort with rolling per-cohort application deadlines (pay-what-you-want).
+  topics: [safety, llm]
+  event_date: 2026-06-28
+  notes: "Apply-by 28 Jun confirmed on course page; verify next deadline on bluedot.org/courses/technical-ai-safety."
+
+- title: BlueDot — Frontier AI Governance course (cohort)
+  url: https://bluedot.org/courses/ai-governance
+  type: event
+  provider: BlueDot Impact
+  cost: free
+  description: Facilitated AI governance cohort with rolling application deadlines (pay-what-you-want).
+  topics: [safety]
+  event_date: 2026-07-05
+  notes: "Apply-by 5 Jul confirmed on course page; verify next deadline on bluedot.org/courses/ai-governance."
+
+- title: AI Engineer World's Fair — Hackathon
+  url: https://cerebralvalley.ai/e/aiewf-hackathon-2026
+  type: event
+  provider: AI Engineer
+  cost: free
+  description: Annual AI engineering hackathon (free to enter), run with Cerebral Valley alongside the conference.
+  topics: [agents, llm, rag]
+  event_date: 2026-06-27
+  notes: Hackathon Jun 27-28 2026; conference Jun 29-Jul 2. Monitor ai.engineer + cerebralvalley.ai.
+
+- title: Devpost — UiPath AgentHack
+  url: https://uipath-agenthack.devpost.com/
+  type: event
+  provider: Devpost / UiPath
+  cost: free
+  description: Sponsored online AI-agent hackathon with $50k in prizes; free to enter.
+  topics: [agents, llm]
+  event_date: 2026-06-29
+  notes: Registration & submission May 15 - Jun 29 2026. Set a Devpost email alert for continuous AI hackathons.
+
+- title: Devpost — Gemini XPRIZE
+  url: https://xprize.devpost.com/
+  type: event
+  provider: Devpost / XPRIZE
+  cost: free
+  description: Build with Gemini XPRIZE — large sponsored AI competition ($2M); free to enter.
+  topics: [llm, agents]
+  event_date: 2026-08-17
+
+- title: lablab.ai — AI Genesis hackathon
+  url: https://lablab.ai/ai-hackathons/ai-genesis-2026
+  type: event
+  provider: lablab.ai
+  cost: free
+  description: Near-continuous free AI hackathons with deadlines and prizes; AI Genesis runs Oct 26 - Nov 3 2026.
+  topics: [agents, llm, rag]
+  event_date: 2026-10-26
+  notes: Submissions due Nov 2. Page is bot-blocked; subscribe to lablab.ai newsletter/Discord for deadlines.
+
+- title: OpenAI DevDay (livestream)
+  url: https://openai.com/index/devday-2026/
+  type: event
+  provider: OpenAI
+  cost: free
+  description: Free keynote livestream + recordings; annual, San Francisco.
+  topics: [llm, agents]
+  event_date: 2026-09-29
+  notes: DevDay 2026 confirmed Sept 29 in San Francisco; watch openai.com/devday for the livestream.
+
+- title: Code with Claude (Anthropic)
+  url: https://claude.com/code-with-claude
+  type: event
+  provider: Anthropic
+  cost: free
+  description: Free livestream + YouTube recordings; annual spring developer tour.
+  topics: [llm, agents, prompting]
+  notes: 2026 tour already ran (SF May 6 / London May 19 / Tokyo Jun 10); recordings on Anthropic YouTube. Next live tour expected ~spring 2027; watch claude.com.

@@ -1,0 +1,107 @@
+# RSS/Atom feeds polled for fresh resources & time-sensitive announcements.
+# Web-verified 2026-06-19. Fields: url, provider, type(default for entries).
+# Scrape-only sources (The Batch, Anthropic news, Kaggle competitions, lablab.ai,
+# HF Daily Papers) have no usable feed and are intentionally omitted here.
+
+# ---- Provider / lab blogs ----
+- url: https://huggingface.co/blog/feed.xml
+  provider: Hugging Face
+  type: article
+
+- url: https://blog.google/technology/ai/rss/
+  provider: Google AI
+  type: article
+
+- url: https://deepmind.google/blog/rss.xml
+  provider: Google DeepMind
+  type: article
+
+- url: https://research.google/blog/rss/
+  provider: Google Research
+  type: article
+
+- url: https://openai.com/news/rss.xml
+  provider: OpenAI
+  type: article
+
+# Anthropic has no official RSS; this is a verified unofficial mirror.
+- url: https://tim-hilde.github.io/anthropic-rss/rss.xml
+  provider: Anthropic (unofficial mirror)
+  type: article
+
+- url: https://www.fast.ai/index.xml
+  provider: fast.ai
+  type: article
+
+- url: https://simonwillison.net/atom/everything/
+  provider: Simon Willison
+  type: article
+
+# ---- Newsletters ----
+- url: https://magazine.sebastianraschka.com/feed
+  provider: Ahead of AI
+  type: newsletter
+
+- url: https://importai.substack.com/feed
+  provider: Import AI
+  type: newsletter
+
+- url: https://tldr.tech/api/rss/ai
+  provider: TLDR AI
+  type: newsletter
+
+# ---- Communities / aggregators ----
+- url: https://www.reddit.com/r/MachineLearning/.rss
+  provider: r/MachineLearning
+  type: community
+
+- url: https://www.reddit.com/r/LocalLLaMA/.rss
+  provider: r/LocalLLaMA
+  type: community
+
+- url: https://hnrss.org/newest?q=AI
+  provider: Hacker News (AI)
+  type: article
+
+# ---- arXiv ----
+- url: https://rss.arxiv.org/rss/cs.LG
+  provider: arXiv cs.LG
+  type: paper
+
+- url: https://rss.arxiv.org/rss/cs.CL
+  provider: arXiv cs.CL
+  type: paper
+
+- url: https://rss.arxiv.org/rss/cs.AI
+  provider: arXiv cs.AI
+  type: paper
+
+- url: https://rss.arxiv.org/rss/cs.CV
+  provider: arXiv cs.CV
+  type: paper
+
+# ---- YouTube channels (channel_id verified) ----
+- url: https://www.youtube.com/feeds/videos.xml?channel_id=UCPk8m_r6fkUSYmvgCBwq-sw
+  provider: Andrej Karpathy
+  type: video
+
+- url: https://www.youtube.com/feeds/videos.xml?channel_id=UCYO_jab_esuFRV4b17AJtAw
+  provider: 3Blue1Brown
+  type: video
+
+- url: https://www.youtube.com/feeds/videos.xml?channel_id=UCcIXc5mJsHVYTZR1maL5l9w
+  provider: DeepLearning.AI
+  type: video
+
+- url: https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg
+  provider: Two Minute Papers
+  type: video
+
+- url: https://www.youtube.com/feeds/videos.xml?channel_id=UCZHmQk67mSJgfCCTn7xBfew
+  provider: Yannic Kilcher
+  type: video
+
+# ---- Events ----
+- url: https://medium.com/feed/kaggle-blog
+  provider: Kaggle Blog
+  type: article

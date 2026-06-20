@@ -11,7 +11,7 @@ _TOPIC_KEYWORDS = {
     "prompting": ["prompt", "prompting", "few-shot", "chain of thought"],
     "rag": ["rag", "retrieval", "vector", "embedding", "semantic search"],
     "agents": ["agent", "agentic", "tool use", "function calling", "autonomous"],
-    "fine-tuning": ["fine-tun", "finetun", "lora", "peft", "training"],
+    "fine-tuning": ["fine-tun", "finetun", "lora", "peft"],
     "deep-learning": ["deep learning", "neural network", "backprop", "pytorch", "tensorflow"],
     "computer-vision": ["vision", "image", "diffusion", "stable diffusion", "cnn"],
     "nlp": ["nlp", "natural language", "tokeniz", "named entity"],

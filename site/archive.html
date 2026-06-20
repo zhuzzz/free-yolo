@@ -182,6 +182,12 @@
     .brow .dep { grid-column:1; } .brow .cd { grid-column:2; grid-row:1; align-self:start; }
     .stop { grid-template-columns:40px 1fr; } .stop .go { display:none; }
   }
+  @media (max-width:480px){
+    .brow { grid-template-columns:1fr 58px; }
+    .brow .dep { display:none; }                 /* T-Nd already conveys timing */
+    .opx,.cost,.curated { font-size:10px; padding:1px 6px; }
+    h1 { font-size:clamp(22px,7vw,30px); }
+  }
   @media (prefers-reduced-motion:reduce){ .flap,.brow,.card:hover::after{animation:none!important} .sec.reveal{opacity:1;transform:none} }
   :focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
 
@@ -230,7 +236,7 @@
 
 <div class="toolbar wrap">
   <input id="q" placeholder="search the board…">
-  <button id="freeToggle">◇ 100% free only</button>
+  <button id="freeToggle" aria-pressed="false">◇ 100% free only</button>
 </div>
 <div class="status wrap" id="status"></div>
 
@@ -386,7 +392,7 @@ if(MODE==='archive'){
     const all=learnDates.concat(competeDates).slice().sort((a,b)=>(recurs(b)?1:0)-(recurs(a)?1:0));
     sections.push({id:'board',label:'Departed',items:all,kind:'board'}); }
 }else{
-  if(learnDates.length)   sections.push({id:'board',label:'Learning deadlines',sub:'cohorts & intensives — catchable now',items:learnDates,kind:'board',cls:'board'});
+  if(learnDates.length)   sections.push({id:'board',label:'Learning deadlines',sub:'cohorts, intensives & live sessions — catchable now',items:learnDates,kind:'board',cls:'board'});
   if(competeDates.length) sections.push({id:'compete',label:'Compete & build',sub:'hackathons & contests (optional, not step one)',items:competeDates,kind:'board',cls:'board'});
 }
 if(fresh.length)    sections.push({id:'new',label:'Just added this week',items:fresh,kind:'grid'});
@@ -454,12 +460,14 @@ const topTopics=Object.entries(topicCounts).sort((a,b)=>{
 }).slice(0,12);
 const TOPIC_HUMAN={fundamentals:'the basics',llm:'large language models',rag:'retrieval (RAG)',agents:'AI agents','ml-math':'math for ML','deep-learning':'deep learning',nlp:'language (NLP)','computer-vision':'vision (images)',prompting:'writing good prompts','fine-tuning':'fine-tuning models',mlops:'running ML in production',evals:'measuring quality',safety:'AI safety',data:'datasets & data'};
 document.getElementById('topics').innerHTML=topTopics.map(([t,c])=>
-  `<button class="top" data-t="${esc(t)}" title="${esc(TOPIC_HUMAN[t]||t)}">${esc(t)}<span class="n">${c}</span></button>`).join('');
+  `<button class="top" data-t="${esc(t)}" aria-pressed="false" title="${esc(TOPIC_HUMAN[t]||t)}">${esc(t)}<span class="n">${c}</span></button>`).join('');
 
 // ---------- operators ----------
 const present=BRANDS.filter(b=>b.top).map(b=>({...b,count:DATA.filter(r=>brandFor(r.provider)?.key===b.key).length})).filter(b=>b.count>0);
 document.getElementById('ops').innerHTML=present.map(b=>
-  `<button class="op" data-b="${b.key}" style="--c:${b.color}"><span class="dot"></span>${esc(b.label)}<span class="n">${b.count}</span></button>`).join('');
+  `<button class="op" data-b="${b.key}" aria-pressed="false" style="--c:${b.color}"><span class="dot"></span>${esc(b.label)}<span class="n">${b.count}</span></button>`).join('');
+// keep aria-pressed in sync with the .active class on every filter button (#2)
+const syncPressed=()=>document.querySelectorAll('.op,.top,#freeToggle').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')));
 // In the archive, keep topic filters (browse the past by subject) — hide only operators (#4).
 if(MODE==='archive') document.getElementById('opsgrp').style.display='none';
 
@@ -490,6 +498,9 @@ function applyFilter(){
     ? `showing <b>${total}</b> of ${TOTAL}<button class="clear" id="clr">✕ clear filters</button>`
     : '';
   const clr=document.getElementById('clr'); if(clr) clr.onclick=resetFilters;
+  if(!total){ const parts=[]; if(term)parts.push(`"${q.value}"`); if(activeBrand)parts.push(activeBrand); if(activeTopic)parts.push(activeTopic); if(onlyFree)parts.push('100% free');
+    if(parts.length && MODE!=='archive') empty.textContent=`No departures match ${parts.join(' · ')}. Clear the filters to see the full board.`; }
+  syncPressed();
   writeHash();
 }
 // #3 shareable/bookmarkable filter state in the URL hash

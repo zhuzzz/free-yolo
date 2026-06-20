@@ -50,7 +50,9 @@ class Store:
             "SELECT 1 FROM resources WHERE id = ?", (r.id,)
         ).fetchone()
         placeholders = ",".join("?" for _ in _COLS)
-        updates = ",".join(f"{c}=excluded.{c}" for c in _COLS if c != "id")
+        # Preserve found_at across re-collects so it means *first* seen, not last —
+        # that's what powers the "new this week" surfacing on the page.
+        updates = ",".join(f"{c}=excluded.{c}" for c in _COLS if c not in ("id", "found_at"))
         self.conn.execute(
             f"INSERT INTO resources ({','.join(_COLS)}) VALUES ({placeholders}) "
             f"ON CONFLICT(id) DO UPDATE SET {updates}",

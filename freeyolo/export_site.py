@@ -165,22 +165,10 @@ _TEMPLATE = r"""<!doctype html>
   footer { border-top:1px solid var(--line); margin-top:48px; padding:26px 0; color:var(--dim);
     font-family:var(--mono); font-size:12px; }
 
-  /* ---------- Live departure ticker ---------- */
-  .ticker { display:flex; align-items:center; border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,#0c0f16,#0a0c11); font-family:var(--mono); font-size:12.5px;
-    height:38px; overflow:hidden; }
-  .ticker .clock { flex:none; padding:0 16px; height:100%; display:flex; align-items:center; gap:9px;
-    color:var(--amber); border-right:1px solid var(--line); letter-spacing:.08em; font-weight:600; }
-  .ticker .clock::before { content:""; width:8px; height:8px; border-radius:50%; background:#ff5a4d;
-    box-shadow:0 0 10px #ff5a4d; animation:blink 1.4s steps(2,jump-none) infinite; }
-  @keyframes blink { 50%{opacity:.25} }
-  .ticker .tk { flex:1; overflow:hidden; white-space:nowrap; -webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent); }
-  .tkin { display:inline-block; white-space:nowrap; animation:scroll 48s linear infinite; }
-  .tkin .ti { color:var(--dim); margin:0 4px; }
-  .tkin .ti em { color:var(--amber); font-style:normal; }
-  .tkin i { color:var(--mint); margin:0 15px; font-style:normal; opacity:.55; }
-  @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-  .ticker:hover .tkin { animation-play-state:paused; }
+  /* ---------- "New this week" badge ---------- */
+  .newb { display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em;
+    color:#0a0a0a; background:var(--mint); border-radius:5px; padding:2px 7px; margin-right:6px;
+    box-shadow:0 0 14px rgba(95,227,192,.45); }
 
   /* ---------- Scroll reveal ---------- */
   .sec.reveal { opacity:0; transform:translateY(22px); transition:opacity .55s ease, transform .55s ease; }
@@ -203,17 +191,13 @@ _TEMPLATE = r"""<!doctype html>
     .brow .dest { grid-column:1; } .brow .dep { grid-column:1; }
   }
   @media (prefers-reduced-motion:reduce){
-    .flap,.brow,.tkin,.ticker .clock::before,.card:hover::after{animation:none!important}
+    .flap,.brow,.card:hover::after{animation:none!important}
     .sec.reveal{opacity:1;transform:none}
   }
   :focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
 </style>
 </head>
 <body>
-<div class="ticker">
-  <div class="clock" id="clk">--:--:--</div>
-  <div class="tk"><div class="tkin" id="tkin"></div></div>
-</div>
 <header><div class="wrap">
   <div class="brandline"><span class="eyebrow">Free AI · Departure Board</span></div>
   <h1>Catch free AI <span class="em">before it leaves the gate.</span></h1>
@@ -265,6 +249,12 @@ const esc = s => (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 const onDark = hex => { const n=parseInt(hex.slice(1),16),l=(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255)); return l>150?'#0a0a0a':'#fff'; };
 function days(d){ return Math.round((new Date(d)-new Date(TODAY))/86400000); }
 
+// "New this week": added in the last 7 days. The catalog's earliest found_at is the
+// initial bulk-load day, so excluding it stops day-one from flagging everything.
+const MIN_FOUND = DATA.reduce((m,r)=> r.found_at && r.found_at < m ? r.found_at : m, '9999-99-99');
+function isNew(r){ return r.found_at && r.found_at !== MIN_FOUND
+  && Math.round((new Date(TODAY)-new Date(r.found_at))/86400000) <= 7; }
+
 // ---- giant date as split-flap characters ----
 (function(){
   const host=document.getElementById('datev');
@@ -304,7 +294,7 @@ function ticket(r,feat){
   const tags=(r.topics||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
   const style=(feat&&br)?` style="--c:${br.color}"`:'';
   return `<div class="card ${feat?'feat':''}"${style} data-s="${esc(blob)}" data-brand="${br?br.key:''}">
-    ${opTag(br,'opx')}
+    ${isNew(r)?'<span class="newb">NEW</span>':''}${opTag(br,'opx')}
     <a class="t" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
     <div class="meta">${meta}</div>
     ${(!feat&&r.description)?`<div class="desc">${esc(r.description)}</div>`:''}
@@ -324,8 +314,11 @@ for(const k of FEATURED_ORDER){
 const soon=DATA.filter(r=>r.event_date).sort((a,b)=>a.event_date.localeCompare(b.event_date));
 document.getElementById('soonv').textContent=soon.length||'0';
 
+const fresh=DATA.filter(isNew).sort((a,b)=>b.found_at.localeCompare(a.found_at)).slice(0,24);
+
 const sections=[];
 if(soon.length)     sections.push({id:'board',key:'BRD',label:'Boarding soon',items:soon,kind:'board'});
+if(fresh.length)    sections.push({id:'new',key:'NEW',label:'Just added this week',items:fresh,kind:'grid'});
 if(featured.length) sections.push({id:'featured',key:'FEA',label:'From the top AI labs',items:featured,kind:'feat'});
 TYPE_ORDER.forEach(t=>{
   const it=DATA.filter(r=>r.type===t).sort((a,b)=>a.title.localeCompare(b.title));
@@ -383,20 +376,6 @@ document.getElementById('ops').addEventListener('click',e=>{
 
 // ---- dynamics ----
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-
-// live mission clock
-const clk=document.getElementById('clk');
-(function tick(){ clk.textContent=new Date().toTimeString().slice(0,8); setTimeout(tick,1000); })();
-
-// scrolling departure ticker (content duplicated for a seamless loop)
-const tkin=document.getElementById('tkin');
-if(soon.length){
-  const seg=soon.slice(0,14).map(r=>{ const n=Math.max(0,days(r.event_date)); const br=brandFor(r.provider);
-    return `<span class="ti"><b style="color:${br?br.color:'#5fe3c0'}">${esc(br?br.label:'OPEN')}</b> ${esc(r.title)} <em>T-${n}d</em></span>`;
-  }).join('<i>✈</i>');
-  tkin.innerHTML='<span class="ti" style="color:var(--amber)">▲ NOW BOARDING</span><i>✈</i>'+seg+'<i>✈</i>'
-    +'<span class="ti" style="color:var(--amber)">▲ NOW BOARDING</span><i>✈</i>'+seg+'<i>✈</i>';
-}else{ document.querySelector('.ticker .tk').innerHTML='<span class="tkin" style="color:var(--dim);padding-left:14px">No departures scheduled — check back after the next scout run.</span>'; }
 
 // scroll-reveal sections
 if(!reduce){

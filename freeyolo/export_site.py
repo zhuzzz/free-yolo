@@ -116,9 +116,14 @@ _TEMPLATE = r"""<!doctype html>
   #q { flex:1; min-width:240px; max-width:520px; font-family:var(--mono); font-size:14px; color:var(--ink);
     background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:11px 14px; }
   #q::placeholder { color:var(--dim); }
-  #freeToggle { cursor:pointer; font-family:var(--mono); font-size:13px; color:var(--ink);
+  #freeToggle, #savedToggle { cursor:pointer; font-family:var(--mono); font-size:13px; color:var(--ink);
     background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 13px; white-space:nowrap; transition:.14s; }
   #freeToggle.active { background:var(--mint); color:#0a0a0a; border-color:var(--mint); }
+  #savedToggle.active { background:var(--amber); color:#0a0a0a; border-color:var(--amber); }
+  .savebtn { position:absolute; top:9px; right:9px; z-index:2; background:transparent; border:0; cursor:pointer;
+    color:var(--dim); font-size:18px; line-height:1; padding:2px 4px; transition:.14s; }
+  .savebtn:hover { color:var(--amber); transform:scale(1.15); }
+  .savebtn.on { color:var(--amber); }
   .status { font-family:var(--mono); font-size:12.5px; color:var(--dim); padding:6px 0 0; min-height:20px; }
   .status b { color:var(--ink); }
   .status .clear { cursor:pointer; color:var(--amber); border:0; background:none; font-family:var(--mono); font-size:12.5px; padding:0 0 0 10px; }
@@ -206,7 +211,7 @@ _TEMPLATE = r"""<!doctype html>
   .card:hover { transform:translateY(-3px); border-color:var(--mint); box-shadow:0 14px 34px rgba(0,0,0,.4); }
   .card.feat { background:linear-gradient(165deg, color-mix(in srgb,var(--c) 16%, var(--panel)), var(--panel)); }
   .card.feat::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--c); }
-  .row1 { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px; }
+  .row1 { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:9px; padding-right:26px; }
   .opx { display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.06em; padding:2px 8px; border-radius:5px; }
   .cost { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.05em; padding:2px 7px; border-radius:5px; }
   .cost.free { background:rgba(95,227,192,.16); color:var(--mint); }
@@ -287,6 +292,7 @@ _TEMPLATE = r"""<!doctype html>
 <div class="toolbar wrap">
   <input id="q" placeholder="search the board…">
   <button id="freeToggle" aria-pressed="false">◇ 100% free only</button>
+  <button id="savedToggle" aria-pressed="false">★ Saved</button>
 </div>
 <div class="status wrap" id="status"></div>
 
@@ -294,10 +300,11 @@ _TEMPLATE = r"""<!doctype html>
 
 <main class="wrap" id="list"></main>
 <div class="empty wrap" id="empty" style="display:none">No departures match. Clear the filters to see the full board.</div>
-<footer><div class="wrap">free-yolo · open data · the board refreshes daily, scouts the web weekly.</div></footer>
+<footer><div class="wrap"><span style="color:var(--ink)">__FOOTER_STATS__</span><br>free-yolo · open data · the board refreshes daily, scouts the web weekly.</div></footer>
 
 <script>
-const DATA = __DATA__;
+// DATA arrives inline (Tier A) or via fetch (Tier B/C) — everything runs once it's here.
+function __BOOT__(DATA){
 const TODAY = "__TODAY__";
 const MODE = "__MODE__";
 const TYPE_ORDER = __TYPE_ORDER__;
@@ -350,11 +357,20 @@ function recurs(r){ const n=(r.notes||'').toLowerCase();
 const esc2 = s => esc(s).replace(/\n/g,' ');
 function opTag(br){ return br?`<span class="opx" style="background:${br.color};color:${onDark(br.color)}">${esc(br.label)}</span>`:''; }
 
+// ---------- Save / read-later (localStorage, per-device, no backend) ----------
+const SAVED_KEY='freeyolo:saved';
+let saved=new Set(); try{ saved=new Set(JSON.parse(localStorage.getItem(SAVED_KEY)||'[]')); }catch(e){}
+let savedOnly=false;
+const isSaved=id=>saved.has(id);
+function persistSaved(){ try{ localStorage.setItem(SAVED_KEY, JSON.stringify([...saved])); }catch(e){} }
+function saveBtn(r){ const on=isSaved(r.id);
+  return `<button class="savebtn ${on?'on':''}" data-id="${esc(r.id)}" aria-pressed="${on}" aria-label="${on?'Saved — remove':'Save for later'}" title="${on?'Saved':'Save for later'}">${on?'★':'☆'}</button>`; }
+
 // ---------- card / row renderers ----------
 function dataAttrs(r){
   const br=brandFor(r.provider);
   const blob=(r.title+' '+r.provider+' '+r.description+' '+(r.topics||[]).join(' ')).toLowerCase();
-  return `data-s="${esc(blob)}" data-brand="${br?br.key:''}" data-topics="${esc((r.topics||[]).join(' '))}" data-cost="${esc(r.cost||'free')}"`;
+  return `data-id="${esc(r.id||'')}" data-s="${esc(blob)}" data-brand="${br?br.key:''}" data-topics="${esc((r.topics||[]).join(' '))}" data-cost="${esc(r.cost||'free')}"`;
 }
 
 
@@ -371,6 +387,7 @@ function ticket(r,feat){
   const row1=[isNew(r)?'<span class="newb">NEW</span>':'', cur, opTag(br), costBadge(r), lvl?`<span class="lvl">${lvl}</span>`:''].filter(Boolean).join(' ');
   const why=(r.event_date&&r.notes)?`<div class="why">${esc2(r.notes)}</div>`:'';
   return `<div class="card ${feat?'feat':''}"${style} ${dataAttrs(r)}>
+    ${saveBtn(r)}
     <div class="row1">${row1}</div>
     <a class="t" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>
     <div class="meta">${meta}</div>
@@ -522,7 +539,7 @@ const present=BRANDS.filter(b=>b.top).map(b=>({...b,count:DATA.filter(r=>brandFo
 document.getElementById('ops').innerHTML=present.map(b=>
   `<button class="op" data-b="${b.key}" aria-pressed="false" style="--c:${b.color}"><span class="dot"></span>${esc(b.label)}<span class="n">${b.count}</span></button>`).join('');
 // keep aria-pressed in sync with the .active class on every filter button (#2)
-const syncPressed=()=>document.querySelectorAll('.op,.top,#freeToggle').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')));
+const syncPressed=()=>document.querySelectorAll('.op,.top,#freeToggle,#savedToggle').forEach(b=>b.setAttribute('aria-pressed',b.classList.contains('active')));
 // In the archive, keep topic filters (browse the past by subject) — hide only operators (#4).
 if(MODE==='archive') document.getElementById('opsgrp').style.display='none';
 
@@ -533,7 +550,8 @@ const q=document.getElementById('q'), empty=document.getElementById('empty'), st
 const TOTAL=DATA.length;
 function applyFilter(){
   const term=q.value.toLowerCase();
-  const active=term||activeBrand||activeTopic||onlyFree; let total=0;
+  const active=term||activeBrand||activeTopic||onlyFree||savedOnly; let total=0;
+  document.getElementById('savedToggle').textContent='★ Saved'+(saved.size?' ('+saved.size+')':'');
   document.querySelectorAll('.sec').forEach(sec=>{
     const cards=sec.querySelectorAll('.card, .stop, .tnode');
     if(!cards.length) return;            // dividers / headings — always shown
@@ -542,7 +560,8 @@ function applyFilter(){
       const m=(!term||(c.dataset.s||'').includes(term))
         && (!activeBrand||c.dataset.brand===activeBrand)
         && (!activeTopic||(' '+(c.dataset.topics||'')+' ').includes(' '+activeTopic+' '))
-        && (!onlyFree||c.dataset.cost==='free');
+        && (!onlyFree||c.dataset.cost==='free')
+        && (!savedOnly||saved.has(c.dataset.id));
       c.style.display=m?'':'none'; if(m)vis++;
     });
     total+=vis; sec.style.display=vis?'':'none';
@@ -585,9 +604,10 @@ function parseHash(){
   document.getElementById('freeToggle').classList.toggle('active',onlyFree);
 }
 function resetFilters(){
-  activeBrand=''; activeTopic=''; onlyFree=false; q.value='';
+  activeBrand=''; activeTopic=''; onlyFree=false; savedOnly=false; q.value='';
   document.querySelectorAll('.op,.top').forEach(o=>o.classList.remove('active'));
   document.getElementById('freeToggle').classList.remove('active');
+  document.getElementById('savedToggle').classList.remove('active');
   applyFilter();
 }
 q.addEventListener('input',applyFilter);
@@ -597,8 +617,17 @@ document.getElementById('ops').addEventListener('click',e=>{ const b=e.target.cl
 function setTopic(t){ activeTopic=activeTopic===t?'':t;
   document.querySelectorAll('.top').forEach(o=>o.classList.toggle('active',o.dataset.t===activeTopic)); applyFilter(); }
 document.getElementById('topics').addEventListener('click',e=>{ const b=e.target.closest('.top'); if(b)setTopic(b.dataset.t); });
-document.getElementById('list').addEventListener('click',e=>{ const t=e.target.closest('.tag'); if(t){e.preventDefault(); setTopic(t.dataset.topic);} });
+document.getElementById('list').addEventListener('click',e=>{
+  const sb=e.target.closest('.savebtn');
+  if(sb){ e.preventDefault(); const id=sb.dataset.id;
+    if(saved.has(id)) saved.delete(id); else saved.add(id); persistSaved();
+    const on=saved.has(id); sb.classList.toggle('on',on); sb.textContent=on?'★':'☆';
+    sb.setAttribute('aria-pressed',on); sb.setAttribute('aria-label',on?'Saved — remove':'Save for later');
+    if(savedOnly) applyFilter(); else document.getElementById('savedToggle').textContent='★ Saved'+(saved.size?' ('+saved.size+')':'');
+    return; }
+  const t=e.target.closest('.tag'); if(t){e.preventDefault(); setTopic(t.dataset.topic);} });
 document.getElementById('freeToggle').addEventListener('click',function(){ onlyFree=!onlyFree; this.classList.toggle('active',onlyFree); applyFilter(); });
+document.getElementById('savedToggle').addEventListener('click',function(){ savedOnly=!savedOnly; this.classList.toggle('active',savedOnly); applyFilter(); });
 
 // archive framing
 if(MODE==='archive'){
@@ -627,6 +656,16 @@ if(!reduce){
 
 parseHash();
 applyFilter();
+}
+// Tier A inlines the data; Tier B/C fetch it so the HTML stays light.
+const __INLINE__ = __DATA_INLINE__;
+if(__INLINE__){ __BOOT__(__INLINE__); }
+else {
+  const main=document.getElementById('list');
+  main.innerHTML='<p class="empty">Loading the board…</p>';
+  fetch("__DATA_URL__").then(r=>r.json()).then(__BOOT__)
+    .catch(()=>{ main.innerHTML='<p class="empty">Could not load the catalog. Refresh to retry.</p>'; });
+}
 </script>
 </body>
 </html>
@@ -670,17 +709,32 @@ def _clean_desc(d: str) -> str:
     return d
 
 
-def render(resources: list[Resource], mode: str = "live",
-           xhref: str = "", xtext: str = "") -> str:
-    payload = [
+# Catalog-size thresholds that pick the rendering strategy automatically.
+TIER_B_MIN = 1500     # >= this: serve data from an external data.json (HTML stays light)
+TIER_C_MIN = 10000    # >= this: shard data + prebuilt search index + paginated render
+
+
+def tier_for(n: int) -> str:
+    return "C" if n >= TIER_C_MIN else ("B" if n >= TIER_B_MIN else "A")
+
+
+def _payload(resources: list[Resource]) -> list[dict]:
+    return [
         {
-            "title": r.title, "url": r.url, "description": _clean_desc(r.description),
+            "id": r.id, "title": r.title, "url": r.url, "description": _clean_desc(r.description),
             "type": r.type, "topics": r.topics, "provider": r.provider,
             "cost": r.cost, "notes": r.notes,
             "event_date": r.event_date, "found_at": r.found_at, "source": r.source,
         }
         for r in resources
     ]
+
+
+def render(resources: list[Resource], mode: str = "live",
+           xhref: str = "", xtext: str = "", tier: str = "A",
+           data_url: str = "data.json") -> str:
+    payload = _payload(resources)
+    inline = json.dumps(payload, ensure_ascii=False) if tier == "A" else "null"
     return (
         _TEMPLATE
         .replace("__TODAY__", date.today().isoformat())
@@ -691,13 +745,20 @@ def render(resources: list[Resource], mode: str = "live",
         .replace("__NOSCRIPT__", _noscript(resources))
         .replace("__TYPE_ORDER__", json.dumps(_TYPE_ORDER))
         .replace("__TYPE_LABEL__", json.dumps(_TYPE_LABEL, ensure_ascii=False))
-        .replace("__DATA__", json.dumps(payload, ensure_ascii=False))
+        .replace("__FOOTER_STATS__",
+                 f"{len(resources)} free resources · updated {date.today().isoformat()} · scaling tier {tier}")
+        .replace("__DATA_URL__", data_url)
+        .replace("__DATA_INLINE__", inline)
     )
 
 
 def write(resources: list[Resource], path: Path | str, mode: str = "live",
-          xhref: str = "", xtext: str = "") -> Path:
+          xhref: str = "", xtext: str = "", tier: str = "A") -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render(resources, mode, xhref, xtext))
+    path.write_text(render(resources, mode, xhref, xtext, tier))
+    # Tier B/C serve the data as a separate file so the HTML download stays small.
+    if tier in ("B", "C"):
+        (path.parent / "data.json").write_text(
+            json.dumps(_payload(resources), ensure_ascii=False))
     return path

@@ -52,13 +52,17 @@ def _export(store: Store) -> None:
     newly_expired = store.expire()          # past deadlines move into the archive
     active = store.all(status="active")
     archived = store.all(status="expired")
+    from . import metrics
+    tier = export_site.tier_for(len(active))     # auto-pick rendering strategy by size
     export_markdown.write(active, MD_PATH)
     archive_label = f"✈ Departed archive ({len(archived)})" if archived else "✈ Departed archive"
-    export_site.write(active, SITE_PATH, mode="live", xhref="archive.html", xtext=archive_label)
+    export_site.write(active, SITE_PATH, mode="live", xhref="archive.html",
+                      xtext=archive_label, tier=tier)
     export_site.write(archived, ARCHIVE_PATH, mode="archive",
-                      xhref="index.html", xtext="← Back to live board")
-    print(f"Wrote site/index.html ({len(active)} live) + archive.html "
-          f"({len(archived)} archived, +{newly_expired} newly expired).")
+                      xhref="index.html", xtext="← Back to live board")   # archive small → Tier A
+    metrics.write(store, store.path.parent)
+    print(f"Wrote site/index.html ({len(active)} live, tier {tier}) + archive.html "
+          f"({len(archived)} archived, +{newly_expired} newly expired). metrics.json updated.")
 
 
 def cmd_list(args) -> None:

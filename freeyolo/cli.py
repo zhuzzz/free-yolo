@@ -1,7 +1,7 @@
 """Command-line entry point.
 
   freeyolo collect      run all sources, upsert into the DB, report new finds
-  freeyolo export       (re)generate RESOURCES.md and site/index.html
+  freeyolo export       (re)generate RESOURCES.md and docs/index.html
   freeyolo list         print the catalog (optionally filtered)
   freeyolo add          manually add one resource
   freeyolo ingest       read a JSON array of resources from stdin (web-search feed)
@@ -23,8 +23,8 @@ from .sources import all_sources
 
 ROOT = Path(__file__).resolve().parent.parent
 MD_PATH = ROOT / "RESOURCES.md"
-SITE_PATH = ROOT / "site" / "index.html"
-ARCHIVE_PATH = ROOT / "site" / "archive.html"
+SITE_PATH = ROOT / "docs" / "index.html"        # docs/ so GitHub Pages "branch → /docs" works
+ARCHIVE_PATH = ROOT / "docs" / "archive.html"
 
 
 def _store(args) -> Store:
@@ -61,7 +61,7 @@ def _export(store: Store) -> None:
     export_site.write(archived, ARCHIVE_PATH, mode="archive",
                       xhref="index.html", xtext="← Back to live board")   # archive small → Tier A
     metrics.write(store, store.path.parent)
-    print(f"Wrote site/index.html ({len(active)} live, tier {tier}) + archive.html "
+    print(f"Wrote docs/index.html ({len(active)} live, tier {tier}) + archive.html "
           f"({len(archived)} archived, +{newly_expired} newly expired). metrics.json updated.")
 
 

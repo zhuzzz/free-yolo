@@ -12,7 +12,7 @@ and catch the *time-sensitive* ones (live cohorts, hackathons, course deadlines)
 sources ─┐
   seed   │   curated YAML backbone (known-good resources)
   rss    ├─▶ collect ─▶ dedupe ─▶ classify ─▶ SQLite ─▶ export ─┬▶ RESOURCES.md
-  github │                                                       └▶ site/index.html
+  github │                                                       └▶ docs/index.html
 websearch┘   (fed in via `ingest`)                                  (static, free hosting)
 ```
 
@@ -30,11 +30,11 @@ pip install -e .            # or: pip install pyyaml feedparser requests
 freeyolo collect            # run all sources, store, regenerate md + site
 freeyolo stats              # counts by type
 freeyolo list --dated       # just the time-sensitive ones
-open site/index.html        # browse/filter in the browser
+open docs/index.html        # browse/filter in the browser
 ```
 
-Outputs: [`RESOURCES.md`](RESOURCES.md), `site/index.html` (live board), and
-`site/archive.html` (departed/expired opportunities). Each export moves any resource
+Outputs: [`RESOURCES.md`](RESOURCES.md), `docs/index.html` (live board), and
+`docs/archive.html` (departed/expired opportunities). Each export moves any resource
 whose deadline has passed into the archive automatically.
 
 ## Commands
@@ -42,7 +42,7 @@ whose deadline has passed into the archive automatically.
 | command | what it does |
 |---|---|
 | `freeyolo collect` | run seed + RSS + GitHub sources, upsert, re-export |
-| `freeyolo export` | regenerate `RESOURCES.md` and `site/index.html` from the DB |
+| `freeyolo export` | regenerate `RESOURCES.md` and `docs/index.html` from the DB |
 | `freeyolo list [--type T] [--dated]` | print the catalog |
 | `freeyolo add "Title" URL --type course --date 2026-09-01` | add one by hand |
 | `freeyolo ingest` | read a JSON array of resources from stdin |
@@ -94,9 +94,9 @@ job is the only LLM-powered piece, so it runs infrequently. Logs: `data/daily.lo
 
 The site is a static file — host it on **GitHub Pages** for free:
 1. Push the repo to GitHub. In **Settings → Pages**, set source to **Deploy from a branch**,
-   branch `main` (or your branch), folder **`/site`**.
+   branch `main` (or your branch), folder **`/docs`** (GitHub Pages only allows `/` or `/docs`).
 2. `.github/workflows/refresh.yml` runs `freeyolo collect` **daily** (pure Python — seeds/
-   RSS/GitHub, **no LLM, no secrets**) and commits the regenerated `site/`, so Pages
+   RSS/GitHub, **no LLM, no secrets**) and commits the regenerated `docs/`, so Pages
    redeploys without your Mac being on.
 3. The **weekly LLM discovery stays local** (`scripts/discover.sh` uses your Claude
    *subscription* via `claude -p`; CI can't use a subscription, and no API key is required).
@@ -115,7 +115,7 @@ also shareable via the URL hash.
 
 `export` picks a rendering strategy by catalog size (see `tier_for` in `export_site.py`):
 - **Tier A** (`< 1,500`): data inlined in the HTML (current).
-- **Tier B** (`1,500–9,999`): data served from an external `site/data.json`; the HTML stays
+- **Tier B** (`1,500–9,999`): data served from an external `docs/data.json`; the HTML stays
   light and `fetch()`es it.
 - **Tier C** (`>= 10,000`): data is sharded + a prebuilt search index, and cards render
   paginated/on-demand so the page never holds tens of thousands of DOM nodes.

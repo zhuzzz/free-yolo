@@ -8,7 +8,7 @@ REPO="/Users/zzzhu/workspace/free-yolo"
 PY="$REPO/.venv/bin/python"
 cd "$REPO"
 
-# 1. Refresh the catalog (also re-exports RESOURCES.md + site/index.html).
+# 1. Refresh the catalog (also re-exports RESOURCES.md + docs/index.html).
 "$PY" -m freeyolo.cli collect
 
 # 2. Build the digest of upcoming dated opportunities.

@@ -52,7 +52,7 @@ fi
 # Push the LLM-discovered finds to the public site (Pages redeploys on push).
 # Guarded: only if a remote/upstream is configured, and never fails the script.
 if git -C "$REPO" remote get-url origin >/dev/null 2>&1; then
-    git -C "$REPO" add -A site RESOURCES.md data/resources.db data/metrics.json data/metrics-history.csv data/seeds.yaml 2>/dev/null || true
+    git -C "$REPO" add -A docs RESOURCES.md data/resources.db data/metrics.json data/metrics-history.csv data/seeds.yaml 2>/dev/null || true
     if ! git -C "$REPO" diff --cached --quiet; then
         git -C "$REPO" commit -m "discover: weekly LLM-found resources" >/dev/null 2>&1 || true
         git -C "$REPO" pull --rebase --autostash >/dev/null 2>&1 || true

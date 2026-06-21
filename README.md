@@ -87,8 +87,42 @@ launchctl kickstart -k gui/$(id -u)/com.freeyolo.daily
 ```
 
 The daily job is free and surfaces deadlines from the existing catalog; the weekly discover
-job is the only LLM-powered (paid) piece, so it runs infrequently. Logs: `data/daily.log`,
+job is the only LLM-powered piece, so it runs infrequently. Logs: `data/daily.log`,
 `data/discover.log`.
+
+## Going public (free, no backend)
+
+The site is a static file — host it on **GitHub Pages** for free:
+1. Push the repo to GitHub. In **Settings → Pages**, set source to **Deploy from a branch**,
+   branch `main` (or your branch), folder **`/site`**.
+2. `.github/workflows/refresh.yml` runs `freeyolo collect` **daily** (pure Python — seeds/
+   RSS/GitHub, **no LLM, no secrets**) and commits the regenerated `site/`, so Pages
+   redeploys without your Mac being on.
+3. The **weekly LLM discovery stays local** (`scripts/discover.sh` uses your Claude
+   *subscription* via `claude -p`; CI can't use a subscription, and no API key is required).
+   After ingesting, it `git push`es its finds so they reach the public site too.
+
+`data/resources.db` is committed on purpose so `found_at` history (and "new this week")
+survives across the CI and local refreshes.
+
+## Save / read-later
+
+Each card has a ☆ button; saved resources persist in your browser's `localStorage` (per
+device, no account). The **★ Saved** toolbar toggle filters to them. Filter/search state is
+also shareable via the URL hash.
+
+## Scaling — automatic, still static
+
+`export` picks a rendering strategy by catalog size (see `tier_for` in `export_site.py`):
+- **Tier A** (`< 1,500`): data inlined in the HTML (current).
+- **Tier B** (`1,500–9,999`): data served from an external `site/data.json`; the HTML stays
+  light and `fetch()`es it.
+- **Tier C** (`>= 10,000`): data is sharded + a prebuilt search index, and cards render
+  paginated/on-demand so the page never holds tens of thousands of DOM nodes.
+
+The switch is automatic — no rewrite needed as the catalog grows. Watch it approach the
+threshold via `data/metrics.json` (and `metrics-history.csv`); the page footer shows the
+current tier.
 
 ## Data model
 

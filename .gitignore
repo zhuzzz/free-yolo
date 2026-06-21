@@ -6,9 +6,9 @@ venv/
 build/
 dist/
 
-# Local catalog DB (regenerate with `freeyolo collect`).
-# Commit it instead if you want found_at history to persist across machines.
-data/resources.db
+# NOTE: data/resources.db IS committed on purpose — it carries found_at history
+# (first-seen dates power "new this week") so the daily CI refresh and local
+# discovery share one source of truth across machines.
 
 # Runtime artifacts from the scheduled jobs.
 data/daily.log

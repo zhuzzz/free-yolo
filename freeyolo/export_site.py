@@ -164,6 +164,37 @@ _TEMPLATE = r"""<!doctype html>
   .more > summary:hover { color:var(--ink); }
   .more .grid { margin-top:8px; }
 
+  /* ---------- Timeline (focal "don't miss" view) ---------- */
+  .timeline { margin-top:14px; border:1px solid var(--line); border-radius:12px;
+    background:linear-gradient(180deg,var(--panel2),var(--panel)); padding:20px 18px; overflow-x:auto; }
+  .trail { position:relative; display:flex; min-width:min-content; }
+  .trail::before { content:""; position:absolute; left:12px; right:12px; top:23px; height:2px;
+    background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 15px); }
+  .tnode { position:relative; flex:0 0 175px; display:flex; flex-direction:column; align-items:flex-start;
+    text-decoration:none; padding:0 12px; transition:transform .14s; }
+  .tnode:hover { transform:translateY(-3px); }
+  .tdot { width:15px; height:15px; border-radius:50%; background:var(--amber); border:3px solid var(--void);
+    margin:16px 0 10px; z-index:1; box-shadow:0 0 10px var(--amber); }
+  .tnode.soon .tdot { background:#ff6b5e; box-shadow:0 0 12px #ff6b5e; }
+  .tnode.far  .tdot { background:var(--mint); box-shadow:0 0 10px var(--mint); }
+  .tnode.past .tdot { background:#2a313e; box-shadow:none; }
+  .tcd { font-family:var(--mono); font-weight:700; font-size:13px; color:var(--amber); }
+  .tnode.soon .tcd { color:#ff6b5e; } .tnode.far .tcd { color:var(--mint); } .tnode.past .tcd { color:var(--dim); }
+  .ttitle { font-weight:600; font-size:13.5px; margin-top:5px; color:var(--ink); line-height:1.3; }
+  .tnode:hover .ttitle { color:var(--mint); }
+  .tmeta { font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:6px; }
+
+  /* ---------- Declutter: divider + collapsible long-tail ---------- */
+  section.sec.divider { padding-top:46px; }
+  .divider .sechead h2 { color:var(--dim); font-weight:600; }
+  nav.jump a.browse { color:var(--dim); }
+  .seccollapse > summary { display:flex; align-items:baseline; gap:10px; cursor:pointer; list-style:none; }
+  .seccollapse > summary::-webkit-details-marker { display:none; }
+  .seccollapse > summary .sechead { flex:1; }
+  .seccollapse > summary:hover .sechead h2 { color:var(--mint); }
+  .dtri { color:var(--mint); font-family:var(--mono); display:inline-block; transition:transform .15s; }
+  .seccollapse[open] .dtri { transform:rotate(90deg); }
+
   /* ---------- Departure board ---------- */
   .board { margin-top:16px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
     background:linear-gradient(180deg,var(--panel2),var(--panel)); }
@@ -430,27 +461,36 @@ const fresh=DATA.filter(r=>isNew(r)&&!isNoise(r)).sort((a,b)=>b.found_at.localeC
 // ---------- assemble sections ----------
 const sections=[];
 if(MODE!=='archive' && pathStops.length) sections.push({id:'start',label:'New to AI? Board here first',sub:'a 5-stop route from zero',items:pathStops.map(s=>s.r),kind:'path',stops:pathStops});
-if(MODE==='archive'){
-  if(dated.length){ // recurring chances first — they come back, watch for the next one (#4)
-    const all=learnDates.concat(competeDates).slice().sort((a,b)=>(recurs(b)?1:0)-(recurs(a)?1:0));
-    sections.push({id:'board',label:'Departed',items:all,kind:'board'}); }
-}else{
-  if(learnDates.length)   sections.push({id:'board',label:'Learning deadlines',sub:'cohorts, intensives & live sessions — catchable now',items:learnDates,kind:'board',cls:'board'});
-  if(competeDates.length) sections.push({id:'compete',label:'Compete & build',sub:'hackathons & contests (optional, not step one)',items:competeDates,kind:'board',cls:'board'});
-}
+
+// ONE focal timeline of dated chances — replaces the two verbose boards (the "don't miss" view).
+const timelineItems = MODE==='archive'
+  ? dated.slice().sort((a,b)=>b.event_date.localeCompare(a.event_date))
+  : dated.slice().sort((a,b)=>a.event_date.localeCompare(b.event_date));
+if(timelineItems.length) sections.push({id:'board',
+  label: MODE==='archive'?'Departed — already sailed':'Upcoming — free chances on the clock',
+  sub: MODE==='archive'?'past, kept for reference':'soonest first · grab them before they board',
+  items:timelineItems, kind:'timeline'});
+
 if(fresh.length)    sections.push({id:'new',label:'Just added this week',items:fresh,kind:'grid'});
 if(featured.length) sections.push({id:'featured',label:'From the top AI labs',items:featured,kind:'feat'});
+
+// Core learning types stay open & in the nav; the long tail collapses and drops out of the nav (declutter).
+const CORE=['course','tutorial','video','book','tool','dataset'];
+let browseDivider=false;
 TYPE_ORDER.forEach(t=>{
   const it=DATA.filter(r=>r.type===t).sort(relevance);
-  if(it.length) sections.push({id:'type-'+t,label:TYPE_LABEL[t],items:it,kind:'grid',gate:true});
+  if(!it.length) return;
+  const minor=!CORE.includes(t);
+  if(minor && !browseDivider){ sections.push({id:'browse',label:'Browse everything else',sub:'papers, communities, newsletters & the feed firehose — collapsed to keep focus',kind:'divider'}); browseDivider=true; }
+  sections.push({id:'type-'+t,label:TYPE_LABEL[t],items:it,kind:'grid',gate:true,minor,collapsed:minor});
 });
 
-const FIRST_BOARD=(sections.find(s=>s.kind==='board')||{}).id;
-const LEGEND='<div class="legend"><span>🟠 boarding</span><span>🔴 ≤10 days</span><span>◇ 100% free</span><span>↻ runs again</span><span>✦ hand-picked</span></div>';
+const LEGEND_TL='<div class="legend"><span>🔴 ≤10 days</span><span>🟠 this month</span><span>🟢 later</span><span>🎓 learn</span><span>🏁 build</span><span>↻ recurs</span></div>';
 
 function sectionHTML(s,n){
   const sub=s.sub?`<span class="sub">${esc(s.sub)}</span>`:'';
-  const head=`<div class="sechead"><span class="ix">${String(n+1).padStart(2,'0')}</span><h2>${esc(s.label)}</h2>${sub}<span class="ct">${s.items.length}</span></div>`;
+  const head=`<div class="sechead"><span class="ix">${String(n+1).padStart(2,'0')}</span><h2>${esc(s.label)}</h2>${sub}${s.items?`<span class="ct">${s.items.length}</span>`:''}</div>`;
+  if(s.kind==='divider') return `<section class="sec reveal divider" id="${s.id}">${head}</section>`;
   if(s.kind==='path'){
     const stops=s.stops.map((st,i)=>{
       if(st.placeholder){
@@ -465,27 +505,35 @@ function sectionHTML(s,n){
     }).join('');
     return `<section class="sec reveal" id="${s.id}">${head}<div class="route">${stops}</div></section>`;
   }
-  if(s.kind==='board'){
-    const dh = MODE==='archive'?'Departed':'Countdown';
-    const legend = s.id===FIRST_BOARD ? LEGEND : '';
-    return `<section class="sec reveal" id="${s.id}">${head}${legend}
-      <div class="board"><div class="head"><span>Destination</span><span>Departs</span><span>${dh}</span></div>
-      ${s.items.map(boardRow).join('')}</div></section>`;
+  if(s.kind==='timeline'){
+    const nodes=s.items.map(r=>{
+      const nn=days(r.event_date);
+      const cd = MODE==='archive' ? (Math.abs(nn)+'d ago') : (nn<=0?'NOW':'T-'+nn+'d');
+      const cls = MODE==='archive'?'past':(nn<=10?'soon':(nn<=31?'mid':'far'));
+      const kind = isCompete(r)?'🏁 build':'🎓 learn';
+      const br=brandFor(r.provider), rec=recurs(r)?' · ↻':'';
+      return `<a class="tnode ${cls}" href="${esc(r.url)}" target="_blank" rel="noopener" ${dataAttrs(r)} title="${esc(r.notes||r.description||'')}" aria-label="${esc(r.title)} — ${r.event_date}, ${cd}">
+        <span class="tdot" aria-hidden="true"></span><span class="tcd">${cd}</span>
+        <span class="ttitle">${esc(r.title)}</span>
+        <span class="tmeta">${r.event_date} · ${kind}${br?' · '+esc(br.label):''}${rec}</span></a>`;
+    }).join('');
+    return `<section class="sec reveal" id="${s.id}">${head}${LEGEND_TL}<div class="timeline"><div class="trail">${nodes}</div></div></section>`;
   }
-  // grid / feat — quality-gate untagged RSS items into a collapsed "More from the feeds" (#1)
+  // grid / feat — quality-gate untagged RSS items into a collapsed "More from the feeds"
   const feat=s.kind==='feat';
   const primary = s.gate ? s.items.filter(r=>!isNoise(r)) : s.items;
   const extra   = s.gate ? s.items.filter(isNoise) : [];
   const grid=`<div class="grid ${feat?'feat':''}">${primary.map(r=>ticket(r,feat)).join('')}</div>`;
   const more=extra.length?`<details class="more"><summary>More from the feeds (${extra.length}) — auto-scouted, untagged</summary>
     <div class="grid">${extra.map(r=>ticket(r,false)).join('')}</div></details>`:'';
+  if(s.collapsed) return `<section class="sec reveal" id="${s.id}"><details class="seccollapse"><summary><span class="dtri" aria-hidden="true">▸</span>${head}</summary>${grid}${more}</details></section>`;
   return `<section class="sec reveal" id="${s.id}">${head}${grid}${more}</section>`;
 }
 
 document.getElementById('list').innerHTML=sections.map(sectionHTML).join('');
-document.getElementById('nav').innerHTML=sections.map(s=>{
-  const cls=s.kind==='path'?'path':(s.cls==='board'||s.id==='board'?'board':'');
-  return `<a href="#${s.id}" data-sec="${s.id}" class="${cls}">${esc(s.label)}<span class="nb">${s.items.length}</span></a>`;
+document.getElementById('nav').innerHTML=sections.filter(s=>!s.minor).map(s=>{
+  const cls=s.kind==='path'?'path':(s.id==='board'?'board':(s.kind==='divider'?'browse':''));
+  return `<a href="#${s.id}" data-sec="${s.id}" class="${cls}">${esc(s.label)}${s.items?`<span class="nb">${s.items.length}</span>`:''}</a>`;
 }).join('');
 
 // ---------- #4 topic chips ----------
@@ -516,10 +564,13 @@ let activeBrand='', activeTopic='', onlyFree=false;
 const q=document.getElementById('q'), empty=document.getElementById('empty'), status=document.getElementById('status');
 const TOTAL=DATA.length;
 function applyFilter(){
-  const term=q.value.toLowerCase(); let total=0;
+  const term=q.value.toLowerCase();
+  const active=term||activeBrand||activeTopic||onlyFree; let total=0;
   document.querySelectorAll('.sec').forEach(sec=>{
+    const cards=sec.querySelectorAll('.card, .stop, .tnode');
+    if(!cards.length) return;            // dividers / headings — always shown
     let vis=0;
-    sec.querySelectorAll('.card, .stop').forEach(c=>{
+    cards.forEach(c=>{
       const m=(!term||(c.dataset.s||'').includes(term))
         && (!activeBrand||c.dataset.brand===activeBrand)
         && (!activeTopic||(' '+(c.dataset.topics||'')+' ').includes(' '+activeTopic+' '))
@@ -531,8 +582,9 @@ function applyFilter(){
     const nav=document.querySelector(`nav a[data-sec="${sec.id}"]`);
     if(nav){nav.style.display=vis?'':'none'; const nb=nav.querySelector('.nb'); if(nb)nb.textContent=vis;}
   });
+  // when filtering, expand collapsed sections so matches aren't hidden behind a closed <details>
+  document.querySelectorAll('.seccollapse').forEach(d=>{ d.open=!!active; });
   empty.style.display=total?'none':'';
-  const active=term||activeBrand||activeTopic||onlyFree;
   status.innerHTML = active
     ? `showing <b>${total}</b> of ${TOTAL}<button class="clear" id="clr">✕ clear filters</button>`
     : '';

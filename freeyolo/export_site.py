@@ -166,7 +166,9 @@ _TEMPLATE = r"""<!doctype html>
 
   /* ---------- Timeline (focal "don't miss" view) ---------- */
   .timeline { margin-top:14px; border:1px solid var(--line); border-radius:12px;
-    background:linear-gradient(180deg,var(--panel2),var(--panel)); padding:20px 18px; overflow-x:auto; }
+    background:linear-gradient(180deg,var(--panel2),var(--panel)); padding:20px 18px; overflow-x:auto;
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);
+    mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent); }  /* right fade hints scroll */
   .trail { position:relative; display:flex; min-width:min-content; }
   .trail::before { content:""; position:absolute; left:12px; right:12px; top:23px; height:2px;
     background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 15px); }
@@ -195,20 +197,6 @@ _TEMPLATE = r"""<!doctype html>
   .dtri { color:var(--mint); font-family:var(--mono); display:inline-block; transition:transform .15s; }
   .seccollapse[open] .dtri { transform:rotate(90deg); }
 
-  /* ---------- Departure board ---------- */
-  .board { margin-top:16px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
-    background:linear-gradient(180deg,var(--panel2),var(--panel)); }
-  .board .head, .brow { display:grid; grid-template-columns:1fr 132px 92px; gap:14px; align-items:start; padding:12px 16px; }
-  .board .head { font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase;
-    color:var(--dim); border-bottom:1px solid var(--line); background:rgba(0,0,0,.25); align-items:center; }
-  .brow { border-bottom:1px solid var(--line); text-decoration:none; transition:background .14s; transform-origin:50% 0; }
-  .brow:last-child { border-bottom:0; } .brow:hover { background:rgba(255,182,39,.06); }
-  .brow .dest .t { font-weight:600; font-size:15.5px; }
-  .brow .bdesc { font-family:var(--mono); font-size:11.5px; color:var(--dim); margin-top:5px; line-height:1.5; }
-  .brow .dep { font-family:var(--mono); font-size:13px; color:var(--ink); padding-top:2px; }
-  .brow .cd { font-family:var(--mono); font-size:12px; font-weight:700; text-align:center; color:#0a0a0a;
-    background:var(--amber); border-radius:5px; padding:5px 0; }
-  .brow .cd.soon { background:#ff6b5e; color:#0a0a0a; }  /* black on red = 7.09:1, passes AA */ .brow .cd.past { background:#2a313e; color:var(--dim); }
 
   /* ---------- Tickets ---------- */
   .grid { display:grid; gap:13px; margin-top:16px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
@@ -375,20 +363,6 @@ function dataAttrs(r){
   return `data-s="${esc(blob)}" data-brand="${br?br.key:''}" data-topics="${esc((r.topics||[]).join(' '))}" data-cost="${esc(r.cost||'free')}"`;
 }
 
-function boardRow(r){
-  const br=brandFor(r.provider), n=days(r.event_date);
-  const cd = MODE==='archive' ? (Math.abs(n)+'d ago') : (n<=0?'NOW':('T-'+n+'d'));
-  const cdcls = MODE==='archive' ? 'past' : (n<=10?'soon':'');
-  const why = r.notes ? esc2(r.notes) : esc2(r.description);
-  const cur = r.source==='seed' ? ' <span class="curated">✦ curated</span>' : '';
-  const tail = (recurs(r) ? ' <span class="opx" style="background:#222836;color:#9fb4ff">↻ recurs</span>' : '') + cur;
-  return `<a class="brow card" href="${esc(r.url)}" target="_blank" rel="noopener" ${dataAttrs(r)} aria-label="${esc(r.title)} — departs ${r.event_date}, ${cd}">
-    <span class="dest"><span class="t">${esc(r.title)}</span> ${opTag(br)} ${costBadge(r)}${tail}
-      ${why?`<span class="bdesc">${why}</span>`:''}</span>
-    <span class="dep">${r.event_date}</span>
-    <span class="cd ${cdcls}">${cd}</span>
-  </a>`;
-}
 
 function ticket(r,feat){
   const br=brandFor(r.provider), lvl=levelOf(r);
@@ -432,7 +406,7 @@ const learnDates=dated.filter(r=>!isCompete(r)).slice().sort(bySoon);
 const competeDates=dated.filter(isCompete).slice().sort(bySoon);
 // "Boarding soon" = dated items actually closing within 2 weeks (#2), not all dated.
 const soonCount = MODE==='archive' ? dated.length
-  : dated.filter(r=>{const n=days(r.event_date); return n>=0 && n<=14;}).length;
+  : dated.filter(r=>{const n=days(r.event_date); return n>=0 && n<=10;}).length;  // match red ".soon" dots
 const _soonEl=document.getElementById('soonv'); _soonEl.textContent=soonCount||'0';
 if(MODE!=='archive' && soonCount>0) _soonEl.style.color='#ff6b5e';
 
@@ -515,7 +489,7 @@ function sectionHTML(s,n){
       return `<a class="tnode ${cls}" href="${esc(r.url)}" target="_blank" rel="noopener" ${dataAttrs(r)} title="${esc(r.notes||r.description||'')}" aria-label="${esc(r.title)} — ${r.event_date}, ${cd}">
         <span class="tdot" aria-hidden="true"></span><span class="tcd">${cd}</span>
         <span class="ttitle">${esc(r.title)}</span>
-        <span class="tmeta">${r.event_date} · ${kind}${br?' · '+esc(br.label):''}${rec}</span></a>`;
+        <span class="tmeta">${r.event_date} · ${kind}${br?' · '+esc(br.label):''}${r.cost&&r.cost!=='free'?' · '+(r.cost==='free-account'?'sign-up':'freemium'):''}${rec}</span></a>`;
     }).join('');
     return `<section class="sec reveal" id="${s.id}">${head}${LEGEND_TL}<div class="timeline"><div class="trail">${nodes}</div></div></section>`;
   }
@@ -526,7 +500,7 @@ function sectionHTML(s,n){
   const grid=`<div class="grid ${feat?'feat':''}">${primary.map(r=>ticket(r,feat)).join('')}</div>`;
   const more=extra.length?`<details class="more"><summary>More from the feeds (${extra.length}) — auto-scouted, untagged</summary>
     <div class="grid">${extra.map(r=>ticket(r,false)).join('')}</div></details>`:'';
-  if(s.collapsed) return `<section class="sec reveal" id="${s.id}"><details class="seccollapse"><summary><span class="dtri" aria-hidden="true">▸</span>${head}</summary>${grid}${more}</details></section>`;
+  if(s.collapsed) return `<section class="sec reveal" id="${s.id}" data-minor="1"><details class="seccollapse"><summary><span class="dtri" aria-hidden="true">▸</span>${head}</summary>${grid}${more}</details></section>`;
   return `<section class="sec reveal" id="${s.id}">${head}${grid}${more}</section>`;
 }
 
@@ -584,6 +558,11 @@ function applyFilter(){
   });
   // when filtering, expand collapsed sections so matches aren't hidden behind a closed <details>
   document.querySelectorAll('.seccollapse').forEach(d=>{ d.open=!!active; });
+  // hide the "Browse everything else" divider (and its nav link) when no long-tail section is showing
+  const divider=document.getElementById('browse');
+  if(divider){ const anyMinor=[...document.querySelectorAll('.sec[data-minor]')].some(s=>s.style.display!=='none');
+    divider.style.display=anyMinor?'':'none';
+    const dn=document.querySelector('nav a[data-sec="browse"]'); if(dn) dn.style.display=anyMinor?'':'none'; }
   empty.style.display=total?'none':'';
   status.innerHTML = active
     ? `showing <b>${total}</b> of ${TOTAL}<button class="clear" id="clr">✕ clear filters</button>`
@@ -651,18 +630,6 @@ if(!reduce){
   const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.06,rootMargin:'0px 0px -8% 0px'});
   document.querySelectorAll('.sec.reveal').forEach(s=>io.observe(s));
 }else{ document.querySelectorAll('.sec.reveal').forEach(s=>s.classList.add('in')); }
-
-// #7 solari flip — skip when the lead deadline is urgent so the real number stays readable
-const lead=document.querySelector('.brow .cd');
-const leadSoon=lead && lead.classList.contains('soon');
-if(lead && !reduce && MODE!=='archive' && !leadSoon){
-  const orig=lead.textContent; let flipped=false;
-  setInterval(()=>{ if(getComputedStyle(lead.closest('.brow')).display==='none') return;
-    lead.style.animation='flipcd .55s ease';
-    setTimeout(()=>{ flipped=!flipped; lead.textContent=flipped?'BOARD':orig; },270);
-    setTimeout(()=>{ lead.style.animation=''; },580);
-  },3800);
-}
 
 parseHash();
 applyFilter();

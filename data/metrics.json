@@ -1,19 +1,19 @@
 {
   "date": "2026-06-21",
-  "total": 268,
-  "active": 268,
+  "total": 276,
+  "active": 276,
   "expired": 0,
   "dated": 8,
   "tier": "A",
   "next_threshold": 1500,
-  "to_next_threshold": 1232,
+  "to_next_threshold": 1224,
   "by_source": {
-    "rss": 179,
+    "rss": 187,
     "seed": 72,
     "github": 17
   },
   "by_type": {
-    "article": 88,
+    "article": 96,
     "video": 44,
     "course": 34,
     "newsletter": 27,

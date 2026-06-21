@@ -140,7 +140,7 @@
   .brow .dep { font-family:var(--mono); font-size:13px; color:var(--ink); padding-top:2px; }
   .brow .cd { font-family:var(--mono); font-size:12px; font-weight:700; text-align:center; color:#0a0a0a;
     background:var(--amber); border-radius:5px; padding:5px 0; }
-  .brow .cd.soon { background:#ff6b5e; color:#fff; } .brow .cd.past { background:#2a313e; color:var(--dim); }
+  .brow .cd.soon { background:#ff6b5e; color:#0a0a0a; }  /* black on red = 7.09:1, passes AA */ .brow .cd.past { background:#2a313e; color:var(--dim); }
 
   /* ---------- Tickets ---------- */
   .grid { display:grid; gap:13px; margin-top:16px; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
@@ -288,6 +288,11 @@ const BASELINE = (Object.entries(_fc).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(
 function isNew(r){ return MODE!=='archive' && r.found_at && r.found_at > BASELINE
   && Math.round((new Date(TODAY)-new Date(r.found_at))/86400000) <= 7; }
 
+// Untagged OR clickbait-y feed items (emoji / #hashtags / junk markup) read as social noise.
+const isNoise=r=>/^rss/.test(r.source||'') && (
+  !(r.topics&&r.topics.length) || /\p{Extended_Pictographic}/u.test(r.title)
+  || /(^|\s)#\w/.test(r.title) || /[<>]/.test(r.title));
+
 // recurring hint from notes (#6/#8)
 function recurs(r){ const n=(r.notes||'').toLowerCase();
   return /(recur|twice a year|next cohort|watch |~nov|~spring|annual|monthly)/.test(n); }
@@ -382,7 +387,8 @@ for(const k of FEATURED_ORDER){
   const it=DATA.filter(r=>{const b=brandFor(r.provider);return b&&b.key===k&&r.source==='seed'&&r.type!=='event';}).sort(relevance);
   featured.push(...it.slice(0,2));
 }
-const fresh=DATA.filter(isNew).sort((a,b)=>b.found_at.localeCompare(a.found_at)).slice(0,24);
+// Keep the prime "Just added" grid curated — exclude feed slop (#1, round 4).
+const fresh=DATA.filter(r=>isNew(r)&&!isNoise(r)).sort((a,b)=>b.found_at.localeCompare(a.found_at)).slice(0,24);
 
 // ---------- assemble sections ----------
 const sections=[];
@@ -404,10 +410,6 @@ TYPE_ORDER.forEach(t=>{
 
 const FIRST_BOARD=(sections.find(s=>s.kind==='board')||{}).id;
 const LEGEND='<div class="legend"><span>🟠 boarding</span><span>🔴 ≤10 days</span><span>◇ 100% free</span><span>↻ runs again</span><span>✦ hand-picked</span></div>';
-// Untagged OR clickbait-y feed items (emoji / #hashtags / junk markup) read as social noise (#4).
-const isNoise=r=>/^rss/.test(r.source||'') && (
-  !(r.topics&&r.topics.length) || /\p{Extended_Pictographic}/u.test(r.title)
-  || /(^|\s)#\w/.test(r.title) || /[<>]/.test(r.title));
 
 function sectionHTML(s,n){
   const sub=s.sub?`<span class="sub">${esc(s.sub)}</span>`:'';

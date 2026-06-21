@@ -87,6 +87,9 @@
     color:var(--dim); font-size:18px; line-height:1; padding:2px 4px; transition:.14s; }
   .savebtn:hover { color:var(--amber); transform:scale(1.15); }
   .savebtn.on { color:var(--amber); }
+  .showmore { margin:12px 0 0; font-family:var(--mono); font-size:13px; color:var(--mint); background:var(--panel);
+    border:1px solid var(--line); border-radius:8px; padding:9px 14px; cursor:pointer; }
+  .showmore:hover { border-color:var(--mint); }
   .status { font-family:var(--mono); font-size:12.5px; color:var(--dim); padding:6px 0 0; min-height:20px; }
   .status b { color:var(--ink); }
   .status .clear { cursor:pointer; color:var(--amber); border:0; background:none; font-family:var(--mono); font-size:12.5px; padding:0 0 0 10px; }
@@ -417,7 +420,7 @@ const timelineItems = MODE==='archive'
 if(timelineItems.length) sections.push({id:'board',
   label: MODE==='archive'?'Departed — already sailed':'Upcoming — free chances on the clock',
   sub: MODE==='archive'?'past, kept for reference':'soonest first · grab them before they board',
-  items:timelineItems, kind:'timeline'});
+  items:timelineItems.slice(0,40), kind:'timeline'});   // cap so the board can't explode at scale
 
 if(fresh.length)    sections.push({id:'new',label:'Just added this week',items:fresh,kind:'grid'});
 if(featured.length) sections.push({id:'featured',label:'From the top AI labs',items:featured,kind:'feat'});
@@ -434,6 +437,9 @@ TYPE_ORDER.forEach(t=>{
 });
 
 const LEGEND_TL='<div class="legend"><span>🔴 ≤10 days</span><span>🟠 this month</span><span>🟢 later</span><span>🎓 learn</span><span>🏁 build</span><span>↻ recurs</span></div>';
+
+// Pagination: cap each grid's initial DOM so the page scales to 10k+ without a backend.
+const PAGE=80; const GRIDS={}; let gridsExpanded=false;
 
 function sectionHTML(s,n){
   const sub=s.sub?`<span class="sub">${esc(s.sub)}</span>`:'';
@@ -467,13 +473,17 @@ function sectionHTML(s,n){
     }).join('');
     return `<section class="sec reveal" id="${s.id}">${head}${LEGEND_TL}<div class="timeline"><div class="trail">${nodes}</div></div></section>`;
   }
-  // grid / feat — quality-gate untagged RSS items into a collapsed "More from the feeds"
+  // grid / feat — quality-gate untagged RSS items into a collapsed "More from the feeds".
+  // Render only the first PAGE cards (DOM stays bounded at any catalog size); the rest come
+  // via "Show more", and an active filter expands every grid so search still sees everything.
   const feat=s.kind==='feat';
   const primary = s.gate ? s.items.filter(r=>!isNoise(r)) : s.items;
   const extra   = s.gate ? s.items.filter(isNoise) : [];
-  const grid=`<div class="grid ${feat?'feat':''}">${primary.map(r=>ticket(r,feat)).join('')}</div>`;
+  GRIDS[s.id]={items:primary, feat, shown:Math.min(PAGE,primary.length)};
+  const moreBtn = primary.length>PAGE ? `<button class="showmore" data-id="${s.id}">Show ${primary.length-PAGE} more</button>` : '';
+  const grid=`<div class="grid ${feat?'feat':''}" id="g-${s.id}">${primary.slice(0,PAGE).map(r=>ticket(r,feat)).join('')}</div>${moreBtn}`;
   const more=extra.length?`<details class="more"><summary>More from the feeds (${extra.length}) — auto-scouted, untagged</summary>
-    <div class="grid">${extra.map(r=>ticket(r,false)).join('')}</div></details>`:'';
+    <div class="grid">${extra.slice(0,PAGE).map(r=>ticket(r,false)).join('')}</div></details>`:'';
   if(s.collapsed) return `<section class="sec reveal" id="${s.id}" data-minor="1"><details class="seccollapse"><summary><span class="dtri" aria-hidden="true">▸</span>${head}</summary>${grid}${more}</details></section>`;
   return `<section class="sec reveal" id="${s.id}">${head}${grid}${more}</section>`;
 }
@@ -506,6 +516,18 @@ const syncPressed=()=>document.querySelectorAll('.op,.top,#freeToggle,#savedTogg
 // In the archive, keep topic filters (browse the past by subject) — hide only operators (#4).
 if(MODE==='archive') document.getElementById('opsgrp').style.display='none';
 
+// While a filter is active, render every grid in full so search sees all items;
+// otherwise keep only PAGE per grid in the DOM (bounded at any catalog size).
+function expandAllGrids(){ if(gridsExpanded)return;
+  for(const id in GRIDS){ const g=GRIDS[id];
+    if(g.shown<g.items.length){ document.getElementById('g-'+id).innerHTML=g.items.map(r=>ticket(r,g.feat)).join(''); g.shown=g.items.length; }
+    const sm=document.querySelector('.showmore[data-id="'+id+'"]'); if(sm)sm.style.display='none'; }
+  gridsExpanded=true; }
+function collapseAllGrids(){ if(!gridsExpanded)return;
+  for(const id in GRIDS){ const g=GRIDS[id]; g.shown=Math.min(PAGE,g.items.length);
+    document.getElementById('g-'+id).innerHTML=g.items.slice(0,g.shown).map(r=>ticket(r,g.feat)).join('');
+    const sm=document.querySelector('.showmore[data-id="'+id+'"]'); if(sm){ sm.style.display=''; sm.textContent='Show '+(g.items.length-g.shown)+' more'; } }
+  gridsExpanded=false; }
 
 // ---------- #3 #4 #7 filtering ----------
 let activeBrand='', activeTopic='', onlyFree=false;
@@ -515,6 +537,7 @@ function applyFilter(){
   const term=q.value.toLowerCase();
   const active=term||activeBrand||activeTopic||onlyFree||savedOnly; let total=0;
   document.getElementById('savedToggle').textContent='★ Saved'+(saved.size?' ('+saved.size+')':'');
+  if(active) expandAllGrids(); else collapseAllGrids();   // bound the DOM unless searching
   document.querySelectorAll('.sec').forEach(sec=>{
     const cards=sec.querySelectorAll('.card, .stop, .tnode');
     if(!cards.length) return;            // dividers / headings — always shown
@@ -527,10 +550,13 @@ function applyFilter(){
         && (!savedOnly||saved.has(c.dataset.id));
       c.style.display=m?'':'none'; if(m)vis++;
     });
-    total+=vis; sec.style.display=vis?'':'none';
-    const ct=sec.querySelector('.ct'); if(ct)ct.textContent=vis;
+    total+=vis;
+    // unfiltered, a paginated grid shows only PAGE cards but its count should be the true total
+    const reported=(GRIDS[sec.id] && !active) ? GRIDS[sec.id].items.length : vis;
+    sec.style.display=reported?'':'none';
+    const ct=sec.querySelector('.ct'); if(ct)ct.textContent=reported;
     const nav=document.querySelector(`nav a[data-sec="${sec.id}"]`);
-    if(nav){nav.style.display=vis?'':'none'; const nb=nav.querySelector('.nb'); if(nb)nb.textContent=vis;}
+    if(nav){nav.style.display=reported?'':'none'; const nb=nav.querySelector('.nb'); if(nb)nb.textContent=reported;}
   });
   // when filtering, expand collapsed sections so matches aren't hidden behind a closed <details>
   document.querySelectorAll('.seccollapse').forEach(d=>{ d.open=!!active; });
@@ -581,6 +607,13 @@ function setTopic(t){ activeTopic=activeTopic===t?'':t;
   document.querySelectorAll('.top').forEach(o=>o.classList.toggle('active',o.dataset.t===activeTopic)); applyFilter(); }
 document.getElementById('topics').addEventListener('click',e=>{ const b=e.target.closest('.top'); if(b)setTopic(b.dataset.t); });
 document.getElementById('list').addEventListener('click',e=>{
+  const more=e.target.closest('.showmore');
+  if(more){ const id=more.dataset.id, g=GRIDS[id];
+    const next=g.items.slice(g.shown, g.shown+PAGE);
+    document.getElementById('g-'+id).insertAdjacentHTML('beforeend', next.map(r=>ticket(r,g.feat)).join(''));
+    g.shown+=next.length;
+    if(g.shown>=g.items.length) more.remove(); else more.textContent='Show '+(g.items.length-g.shown)+' more';
+    return; }
   const sb=e.target.closest('.savebtn');
   if(sb){ e.preventDefault(); const id=sb.dataset.id;
     if(saved.has(id)) saved.delete(id); else saved.add(id); persistSaved();

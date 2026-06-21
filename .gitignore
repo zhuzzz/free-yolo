@@ -14,3 +14,6 @@ data/resources.db
 data/daily.log
 data/discover.log
 data/digest-latest.txt
+
+# macOS
+.DS_Store

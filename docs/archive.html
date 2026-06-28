@@ -243,7 +243,7 @@
     time-sensitive ones board first and nothing good slips by unseen. New to AI? Take the 5-stop route below.</p>
   <div class="readout">
     <div class="cell date"><div class="k">Board updated</div><div class="v" id="datev"></div></div>
-    <div class="cell small"><div class="k">On board</div><div class="v">0</div></div>
+    <div class="cell small"><div class="k">On board</div><div class="v">1</div></div>
     <div class="cell small"><div class="k">Boarding soon</div><div class="v" id="soonv">—</div></div>
   </div>
 </div></header>
@@ -266,12 +266,12 @@
 
 <main class="wrap" id="list"></main>
 <div class="empty wrap" id="empty" style="display:none">No departures match. Clear the filters to see the full board.</div>
-<footer><div class="wrap"><span style="color:var(--ink)">0 free resources · updated 2026-06-27 · scaling tier A</span><br>free-yolo · open data · the board refreshes daily, scouts the web weekly.</div></footer>
+<footer><div class="wrap"><span style="color:var(--ink)">1 free resources · updated 2026-06-28 · scaling tier A</span><br>free-yolo · open data · the board refreshes daily, scouts the web weekly.</div></footer>
 
 <script>
 // DATA arrives inline (Tier A) or via fetch (Tier B/C) — everything runs once it's here.
 function __BOOT__(DATA){
-const TODAY = "2026-06-27";
+const TODAY = "2026-06-28";
 const MODE = "archive";
 const TYPE_ORDER = ["course", "tutorial", "video", "book", "tool", "dataset", "paper", "community", "newsletter", "article", "event", "other"];
 const TYPE_LABEL = {"course": "Courses", "tutorial": "Tutorials & guides", "video": "Videos & lectures", "book": "Books", "tool": "Tools & playgrounds", "dataset": "Datasets", "paper": "Papers", "community": "Communities", "newsletter": "Newsletters", "article": "Articles", "event": "Events", "other": "Other"};
@@ -654,7 +654,7 @@ parseHash();
 applyFilter();
 }
 // Tier A inlines the data; Tier B/C fetch it so the HTML stays light.
-const __INLINE__ = [];
+const __INLINE__ = [{"id": "152ae13b69329c6a", "title": "AI Engineer World's Fair — Hackathon", "url": "https://cerebralvalley.ai/e/aiewf-hackathon-2026", "description": "Annual AI engineering hackathon (free to enter), run with Cerebral Valley alongside the conference.", "type": "event", "topics": ["agents", "llm", "rag"], "provider": "AI Engineer", "cost": "free", "notes": "Hackathon Jun 27-28 2026; conference Jun 29-Jul 2. Monitor ai.engineer + cerebralvalley.ai.", "event_date": "2026-06-27", "found_at": "2026-06-20", "source": "seed"}];
 if(__INLINE__){ __BOOT__(__INLINE__); }
 else {
   const main=document.getElementById('list');

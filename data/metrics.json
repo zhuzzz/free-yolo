@@ -1,28 +1,28 @@
 {
-  "date": "2026-09-29",
-  "total": 4473,
-  "active": 4467,
-  "expired": 6,
-  "dated": 2,
+  "date": "2026-09-30",
+  "total": 4511,
+  "active": 4504,
+  "expired": 7,
+  "dated": 1,
   "tier": "B",
   "next_threshold": 10000,
-  "to_next_threshold": 5533,
+  "to_next_threshold": 5496,
   "by_source": {
-    "rss": 4382,
-    "seed": 66,
+    "rss": 4420,
+    "seed": 65,
     "github": 19
   },
   "by_type": {
-    "paper": 2033,
-    "article": 1627,
-    "community": 528,
-    "newsletter": 104,
+    "paper": 2049,
+    "article": 1645,
+    "community": 531,
+    "newsletter": 105,
     "video": 100,
     "course": 34,
     "tutorial": 23,
     "book": 7,
     "tool": 5,
-    "event": 4,
+    "event": 3,
     "dataset": 2
   }
 }

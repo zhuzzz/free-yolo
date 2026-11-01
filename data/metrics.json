@@ -1,21 +1,21 @@
 {
-  "date": "2026-10-31",
-  "total": 5742,
-  "active": 5734,
+  "date": "2026-11-01",
+  "total": 5757,
+  "active": 5749,
   "expired": 8,
   "dated": 0,
   "tier": "B",
   "next_threshold": 10000,
-  "to_next_threshold": 4266,
+  "to_next_threshold": 4251,
   "by_source": {
-    "rss": 5651,
+    "rss": 5666,
     "seed": 64,
     "github": 19
   },
   "by_type": {
     "paper": 2625,
-    "article": 2105,
-    "community": 683,
+    "article": 2114,
+    "community": 689,
     "newsletter": 129,
     "video": 119,
     "course": 34,
